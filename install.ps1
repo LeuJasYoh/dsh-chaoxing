@@ -28,12 +28,14 @@
 #   powershell -File .\install.ps1          # also works (Windows PowerShell 5.1)
 #
 #   .\install.ps1 -DryRun                   # preview only
+#   .\install.ps1 -VerifyOnly               # check the install, change nothing
 #   .\install.ps1 -Rollback <backup>        # restore a backup
 #   .\install.ps1 -ProfileName default      # a profile other than "desktop"
 
 [CmdletBinding()]
 param(
     [switch]$DryRun,
+    [switch]$VerifyOnly,
     [string]$Rollback,
     [string]$ProfileName = 'desktop'
 )
@@ -86,6 +88,92 @@ function Fail {
 }
 
 # ---------------------------------------------------------------------------
+# Content verification
+#   Test-InstalledCopy -SourceDir <plugin dir> -InstalledDir <node_modules copy>
+#
+# Compares the SHA-256 of every file that must ship.
+#
+# WHY A FILE COUNT IS NOT ENOUGH (measured): `pnpm install` can exit 0 while
+# leaving STALE content behind -- the exact failure the gotcha above describes.
+# A count sees "12 files" and reports success even when all 12 are old.
+# Comparing hashes is what turns "installed but old" from silent into loud.
+#
+# Expected set = package.json "files" + the three npm always bundles in
+# (package.json itself, README*, LICENSE*) even though "files" omits them.
+# ---------------------------------------------------------------------------
+function Test-InstalledCopy {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$SourceDir,
+        [Parameter(Mandatory = $true)][string]$InstalledDir
+    )
+
+    $problems = @()
+    $expected = @()
+
+    if (-not (Test-Path -LiteralPath $InstalledDir)) {
+        Fail -En "installed copy missing: $InstalledDir" `
+             -Zh "已安装副本缺失: $InstalledDir"
+    }
+
+    # (a) what must ship
+    $pluginPkg = Get-Content -LiteralPath (Join-Path $SourceDir 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($pluginPkg.files) {
+        foreach ($entry in @($pluginPkg.files)) {
+            $full = Join-Path $SourceDir ($entry -replace '/', '\')
+            if (Test-Path -LiteralPath $full -PathType Container) {
+                foreach ($f in (Get-ChildItem -LiteralPath $full -Recurse -File)) {
+                    $expected += $f.FullName.Substring($SourceDir.Length).TrimStart('\', '/')
+                }
+            } elseif (Test-Path -LiteralPath $full) {
+                $expected += $entry
+            } else {
+                $problems += "files whitelist points at a missing path: $entry"
+            }
+        }
+    }
+    foreach ($f in (Get-ChildItem -LiteralPath $SourceDir -File)) {
+        if ($f.Name -eq 'package.json' -or $f.Name -match '^(README|LICENSE)') {
+            $expected += $f.Name
+        }
+    }
+    $expected = @($expected | Sort-Object -Unique)
+
+    foreach ($rel in $expected) {
+        $norm = $rel -replace '\\', '/'
+        $src  = Join-Path $SourceDir    ($norm -replace '/', '\')
+        $dst  = Join-Path $InstalledDir ($norm -replace '/', '\')
+        if (-not (Test-Path -LiteralPath $dst)) {
+            $problems += "missing: $norm"
+            continue
+        }
+        $h1 = (Get-FileHash -LiteralPath $src -Algorithm SHA256).Hash
+        $h2 = (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash
+        if ($h1 -ne $h2) { $problems += "stale: $norm" }
+    }
+
+    # (b) nothing may be installed that the source does not carry
+    foreach ($f in (Get-ChildItem -LiteralPath $InstalledDir -Recurse -File)) {
+        $norm = $f.FullName.Substring($InstalledDir.Length).TrimStart('\', '/') -replace '\\', '/'
+        if (-not (Test-Path -LiteralPath (Join-Path $SourceDir ($norm -replace '/', '\')))) {
+            $problems += "not in source: $norm"
+        }
+    }
+
+    if ($problems.Count -gt 0) {
+        Write-Host ""
+        Say -En "[FAIL] the installed copy does not match the source:" `
+            -Zh "[FAIL] 已安装副本与源文件不一致：" -Color Red
+        foreach ($p in $problems) { Write-Host "         - $p" }
+        Say -En "       Re-run: .\install.ps1" -Zh "       请重新运行: .\install.ps1"
+        Fail -En "content verification failed" -Zh "内容校验失败"
+    }
+
+    Say -En "[ok] verified: $($expected.Count) files linked, every hash matches" `
+        -Zh "[ok] 校验通过: 已链接 $($expected.Count) 个文件，哈希全部一致" -Color Green
+}
+
+# ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
 $PluginDir  = $PSScriptRoot
@@ -94,6 +182,7 @@ $PkgPath    = Join-Path $ProfileDir 'package.json'
 $NodeExe    = Join-Path $env:USERPROFILE '.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\node\bin\node.exe'
 $PnpmMjs    = Join-Path $env:USERPROFILE '.dsh\dsh-runtimes\dsh-primary-runtime\dependencies\pnpm\bin\pnpm.mjs'
 $PatchMjs   = Join-Path $PluginDir 'scripts\patch-profile.mjs'
+$staleDir   = Join-Path $ProfileDir 'node_modules\dsh-xuexi'
 
 Say -En "PowerShell          : $($PSVersionTable.PSVersion)" `
     -Zh "PowerShell 版本      : $($PSVersionTable.PSVersion)"
@@ -125,6 +214,16 @@ if (-not (Test-Path $PatchMjs)) {
          -Zh "未找到补丁脚本: $PatchMjs"
 }
 Say -En "[ok] preflight passed" -Zh "[ok] 前置检查通过" -Color Green
+
+# ---- verify-only path -----------------------------------------------------
+# Check an existing install without changing anything:
+#   .\install.ps1 -VerifyOnly
+if ($VerifyOnly) {
+    Say -En "[..] verifying installed copy ..." -Zh "[..] 正在校验已安装副本 ..."
+    Write-Host ""
+    Test-InstalledCopy -SourceDir $PluginDir -InstalledDir $staleDir
+    exit 0
+}
 
 # ---- rollback path --------------------------------------------------------
 if ($Rollback) {
@@ -188,7 +287,6 @@ if ($DryRun) {
 # it re-resolves the dependency and definitely re-materialises the copy.
 # It leaves the existing version spec in package.json untouched.
 #
-$staleDir = Join-Path $ProfileDir 'node_modules\dsh-xuexi'
 if (Test-Path $staleDir) {
     Say -En "[..] removing stale installed copy: $staleDir" `
         -Zh "[..] 正在删除旧的已安装副本: $staleDir"
@@ -221,8 +319,9 @@ if ($code -ne 0) {
     Fail -En "pnpm add failed" -Zh "pnpm add 失败"
 }
 
-# ---- 5) verify it is really there ------------------------------------------
+# ---- 5) verify it is really there, with the RIGHT CONTENT -------------------
 # Do not trust the exit code: the failure mode above produced exit code 0.
+# A file count is not enough either -- see Test-InstalledCopy for why.
 if (-not (Test-Path $staleDir)) {
     Write-Host ""
     Say -En "[FAIL] node_modules\dsh-xuexi is still missing after install." `
@@ -231,9 +330,7 @@ if (-not (Test-Path $staleDir)) {
         -Zh "       请手动尝试: cd `"$ProfileDir`"; pnpm add `"$linkSpec`""
     Fail -En "installed copy missing" -Zh "已安装副本缺失"
 }
-$fileCount = (Get-ChildItem $staleDir -Recurse -File | Measure-Object).Count
-Say -En "[ok] verified: $fileCount files linked into node_modules" `
-    -Zh "[ok] 校验通过: 已链接 $fileCount 个文件到 node_modules" -Color Green
+Test-InstalledCopy -SourceDir $PluginDir -InstalledDir $staleDir
 
 Write-Host ""
 Say -En "[ok] install completed" -Zh "[ok] 安装完成" -Color Green
