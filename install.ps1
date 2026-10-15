@@ -344,8 +344,8 @@ Say -En "     The new mode appears under the CUSTOM group." `
     -Zh "     新模式会出现在 CUSTOM 分组下。"
 Say -En "  3. If the new-task selector is missing, turn on General -> coding tools." `
     -Zh "  3. 如果新建任务选择器缺失，请打开 通用 -> coding tools。"
-Say -En "  4. Pick the 'Wangke (online-course)' mode, then say: take over the browser first" `
-    -Zh "  4. 选择 'Wangke (online-course)' 模式，然后说: take over the browser first"
+Say -En "  4. Pick the 'Online-course' (xuexi) mode, then say: take over the browser first" `
+    -Zh "  4. 选择 '网课模式'（xuexi），然后说: take over the browser first"
 Write-Host ""
 Say -En "Rollback:" -Zh "回滚命令:"
 Write-Host "  .\install.ps1 -Rollback `"$backup`""

@@ -184,6 +184,44 @@ t('A45 hand_read: 用 frame 指定窗口也行', () => {
   eq(r.ok, true); eq(r.args.frame.includes('pan-yz'), true)
 })
 
+// ── A46+：__need_shot 特例键（改进，修 P1-4：提示词三处承诺"看不清就回
+//    __need_shot"，但早先正整数键校验把它当 ARG 打回——承诺在代码层不通）───
+t('A46 hand_verdict: __need_shot 和 picks 一起给 → 通过，归一化成 needShots', () => {
+  const r = A.checkArgs('hand_verdict', { picks: { '1': ['B'], __need_shot: [3, 3] } })
+  eq(r.ok, true)
+  eq(JSON.stringify(r.args.needShots), JSON.stringify([3]), 'needShots 要去重')
+  eq(JSON.stringify(r.args.picks), JSON.stringify({ '1': ['B'] }), '__need_shot 不该混进 picks')
+})
+t('A47 hand_verdict: 只有 __need_shot 也允许（就是要特写，还没定）', () => {
+  const r = A.checkArgs('hand_verdict', { picks: { __need_shot: [2] } })
+  eq(r.ok, true)
+  eq(JSON.stringify(r.args.needShots), JSON.stringify([2]))
+})
+t('A48 hand_verdict: __need_shot 值不是正整数数组 → ARG', () => {
+  eq(A.checkArgs('hand_verdict', { picks: { __need_shot: ['x'] } }).ok, false)
+  eq(A.checkArgs('hand_verdict', { picks: { __need_shot: 3 } }).ok, false)
+  eq(A.checkArgs('hand_verdict', { picks: { __need_shot: [0] } }).ok, false)
+})
+t('A49 hand_verdict: 其它坏键照旧拒（特例只开 __need_shot 一个口子）', () => {
+  eq(A.checkArgs('hand_verdict', { picks: { __need_shot__: [1] } }).ok, false)
+  eq(A.checkArgs('hand_verdict', { picks: { '0': ['B'] } }).ok, false)
+})
+
+// ── A50+：eye_shot 省图三参数（改进）──────────────────────────────────────
+t('A50 eye_shot: i / embed / force 受支持', () => {
+  const r = A.checkArgs('eye_shot', { i: 'r7k2p1:3', embed: false, force: true })
+  eq(r.ok, true)
+  eq(r.args.i, 'r7k2p1:3'); eq(r.args.embed, false); eq(r.args.force, true)
+})
+t('A51 eye_shot: i 和 full/clip 互斥', () => {
+  eq(A.checkArgs('eye_shot', { i: 'r1:1', full: true }).ok, false)
+  eq(A.checkArgs('eye_shot', { i: 'r1:1', clip: { x: 0, y: 0, width: 10, height: 10 } }).ok, false)
+})
+t('A52 eye_shot: 默认 embed=true、force=false（不改变老行为）', () => {
+  const r = A.checkArgs('eye_shot', {})
+  eq(r.args.embed, true); eq(r.args.force, false); eq(r.args.i, null)
+})
+
 // ── A46+：笔记作废机制（实测教训：库里同时躺着「js-play 无效」和「js-play 有效」
 //    两条矛盾经验，下次开工互相打架）──────────────────────────────────────────
 {
@@ -358,6 +396,23 @@ t('B18 交的按钮找不到 → NO_SUBMIT_TARGET', () => {
   })
   eq(gate.verdict, 'NO_SUBMIT_TARGET')
 })
+// B19+：needShots 与 uncertain 同级——"等着补特写"不是"给了不同答案"（改进，__need_shot 闭环）
+t('B19 recordVerdict 存下 needShots', () => {
+  let store = {}
+  store = G.recordVerdict(store, { ledgerHash: 'L', judgeId: 'g1', picks: { 1: ['B'] }, needShots: [2] })
+  eq(JSON.stringify(G.judgeSummary(store, 'L').entries[0].needShots), JSON.stringify([2]))
+})
+t('B20 compareThree：needShots 处被标成"未定"，不当成答案不一致', () => {
+  const cmp = G.compareThree(AREAS, G.buildLedger(AREAS), [
+    { id: 'g1', picks: { 1: ['B'] }, uncertain: [], needShots: [2] },
+    { id: 'g2', picks: { 1: ['B'], 2: ['A'] }, uncertain: [], needShots: [] },
+  ])
+  const row = cmp.dissent.find((r) => r.n === 2)
+  ta('B20b 第 2 处：等特写的那位被标成未定', !!row && row.judges[0].uncertain === true, JSON.stringify(row?.judges))
+  ta('B20c 分歧说明里说"拿不准"而不是报它给了错答案', !!row && /拿不准/.test(
+    row.judges.map((x) => (x.uncertain ? '拿不准' : '给了')).join(','),
+  ))
+})
 
 t('B19 不过 → 没有票据', () => {
   const { gate, lh } = gateWith({ entries: [] })
@@ -482,6 +537,16 @@ const IDX = read('index.js')
 const TOOLS = [...IDX.matchAll(/name:\s*'(eye_[a-z]+|hand_[a-z]+)'/g)].map((m) => m[1])
 
 t('C1 一共 16 个工具', () => eq(TOOLS.length, 16, `实际 ${TOOLS.length}：${TOOLS.join(',')}`))
+t('C1b README 工具表对得上（修文档漂移：旧 README 写"15 个工具"、漏了 hand_read）', () => {
+  const readme = read('README.md')
+  for (const n of TOOLS) ta(`C1c README 提到 ${n}`, readme.includes(n))
+  ta('C1d README 写 16 个工具', /16 个工具/.test(readme))
+})
+t('C1e install.ps1 收尾模式名不是旧名（Wangke）', () => {
+  const ps1 = read('install.ps1')
+  ta('C1f 没有旧模式名', !/Wangke/.test(ps1))
+  ta('C1g 写了网课模式', /网课模式/.test(ps1))
+})
 t('C2 眼 5 个', () => {
   const eyes = TOOLS.filter((x) => x.startsWith('eye_'))
   eq(eyes.length, 5, eyes.join(','))

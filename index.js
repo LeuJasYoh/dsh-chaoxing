@@ -126,7 +126,7 @@ const objOut = {
 }
 
 /** 截图存盘 + 注册成附件 —— eye_shot 用 */
-async function takeShot(ctx, work, { full = false, label = 'shot', clip = null } = {}) {
+async function takeShot(ctx, work, { full = false, label = 'shot', clip = null, embed = true } = {}) {
   const dir = NT.shotsDir()
   mkdirSync(dir, { recursive: true })
   const attachments = ctx.get?.('attachments')
@@ -143,7 +143,9 @@ async function takeShot(ctx, work, { full = false, label = 'shot', clip = null }
 
     let image = null
     let err = null
-    if (attachments?.saveImage) {
+    // embed:false = 只落盘，不往上下文里嵌图（给复核员备图用：它 read_image 读文件）。
+    // 这种情况下"附件拒了图"也无所谓——本来就没打算嵌，不做 JPEG 降级重截。
+    if (embed && attachments?.saveImage) {
       try {
         image = await attachments.saveImage({
           data: new Uint8Array(buf),
@@ -157,7 +159,7 @@ async function takeShot(ctx, work, { full = false, label = 'shot', clip = null }
 
   let r = await attempt('png')
   // 只有"附件服务在、但拒了这张图"时才降级重截；服务本来就不可用就没什么好重试的
-  if (!r.image && attachments?.saveImage) {
+  if (embed && !r.image && attachments?.saveImage) {
     const j = await attempt('jpeg', 78).catch(() => null)
     if (j?.image) r = { ...j, downscaled: true, note: `整张 PNG（${r.bytes} B）存不进附件，已改用 JPEG` }
   }
@@ -235,7 +237,12 @@ function applyInner(ctx, config = {}) {
   const port = config.port ?? DEFAULT_PORT
 
   /** 这次会话的状态（浏览器句柄 + 复核登记簿） */
-  const session = { browser: null, work: null, verdicts: {}, lastToken: null, busy: false, ignoreByLh: {} }
+  const session = { browser: null, work: null, verdicts: {}, lastToken: null, busy: false, ignoreByLh: {}, lastSig: null, dirty: true }
+
+  // ★ "页面内容签名"记事本（省图用，改进）：每次"看"记下 readAreas 给的 sig；
+  //   之后任何"手"动作把 dirty 置 true（见下面 reg 外壳）。eye_shot 据此判断
+  //   "页面跟上次看的时候是不是同一内容"——是就不必重新烧一张图。
+  const noteSig = (r) => { if (r?.sig) { session.lastSig = r.sig; session.dirty = false } }
 
   // ── 过程文件落在哪：<工作区>/.xuexi/ ──────────────────────────────────────
   //
@@ -455,8 +462,13 @@ function applyInner(ctx, config = {}) {
           }
         }
         if (def.serial) session.busy = true
-        try { return toLossless(await def.run(chk.args, exec)) }
-        catch (e) { return wrapError(e) }
+        try {
+          const out = toLossless(await def.run(chk.args, exec))
+          // ★ 任何"手"动作之后，页面内容签名一律作废（省图去重要的是"真没变"，
+          //   宁可多截一张，也不能拿旧结论骗自己）。eye_open 换了绑定同理。
+          if (def.name.startsWith('hand_') || def.name === 'eye_open') session.dirty = true
+          return out
+        } catch (e) { return wrapError(e) }
         finally { if (def.serial) session.busy = false }
       }
       return run()
@@ -523,6 +535,7 @@ function applyInner(ctx, config = {}) {
       const work = await getWork()
       const r = await SEE.readAreas(work, { full })
       const areas = r.areas ?? []
+      noteSig(r)
       // ★ marks / layout 必须透传出去 —— 曾经漏了这两行，
       //   工具算出来了却到不了模型手里，提示词里那句「eye_see 的 marks 会报给你」就是空的。
       const marks = r.marks ?? []
@@ -580,24 +593,31 @@ function applyInner(ctx, config = {}) {
     name: 'eye_shot',
     description:
       '给这一页截图。**图会直接放在返回里 —— 你确实能看到它**，不是只给路径。\n'
-      + '看不清某一处时用 clip 只截那一块（清楚得多）。',
+      + '⚠️ 截图贵（一张图烧掉的上下文够问好几次问题），按三问省：\n'
+      + '  ① 这问题 `eye_see` 的数据（areas/marks/done）能答吗？能就别拍；\n'
+      + '  ② 必须拍的话，整页还是某一处？**优先按编号裁那一处**（`{"i":"r7k2p1:3"}`，自动算矩形，小十倍）；\n'
+      + '  ③ 这张图是给复核员看的吗？是就 `embed:false` 只落盘，把 file 路径发给它（它用 read_image 读，不占你的上下文）。\n'
+      + '页面跟上次看的时候一样时，默认**不重烧一张**（返回“未变”）；确实要就 `force:true`。',
     parameters: {
       type: 'object',
       properties: {
         full: { type: 'boolean', description: '整页截图（默认只截当前这一屏）' },
         clip: {
           type: 'object',
-          description: '只截一块：{x,y,width,height}（当前屏幕坐标）',
+          description: '只截一块：{x,y,width,height}（页面坐标：文档左上角为原点，含滚动量）',
           properties: { x: { type: 'number' }, y: { type: 'number' }, width: { type: 'number' }, height: { type: 'number' } },
           additionalProperties: false,
         },
+        i: { type: 'string', description: '★ 按 eye_see 给的编号只截那一处（自动算矩形，比整页小一个数量级）。和 full/clip 互斥' },
+        embed: { type: 'boolean', description: 'false = 只落盘不嵌进上下文（给复核员备图时用，把返回的 file 路径发给它）' },
+        force: { type: 'boolean', description: '页面内容没变也重新截（默认：没变就返回“未变”，不烧图）' },
         label: { type: 'string', description: '文件名标记，方便你认' },
         useShotId: { type: 'string', description: '如果这次坐标是从某张旧截图上读的，把那张图的 shotId 带上' },
       },
       additionalProperties: false,
     },
     isConcurrencySafe: () => true,
-    async run({ full, clip, label, useShotId }) {
+    async run({ full, clip, label, useShotId, i: locI, embed, force }) {
       if (useShotId) {
         const s = B.getShot?.(useShotId)
         if (!s) {
@@ -613,6 +633,52 @@ function applyInner(ctx, config = {}) {
       const url = await work.eval('location.href').catch(() => null)
       const frameRects = await work.frameRects?.().catch?.(() => []) ?? []
       const scrollY = await work.eval('window.scrollY').catch(() => null)
+
+      // ★ 变化去重（改进，省图）：页面内容跟上次"看"的时候一模一样、且之后没有任何
+      //   "手"动作（session.dirty）—— 就不重烧一张图，如实说"未变"。
+      //   只对"默认截图"生效：显式给了 full / clip / i 的调用一律照办（模型要它有理由）。
+      if (!force && !locI && !clip && !full && session.lastSig && !session.dirty) {
+        return {
+          ok: true,
+          skipped: true,
+          unchanged: true,
+          sig: session.lastSig,
+          note: '页面内容跟上次看的时候相同（之后没有点/写/滚/翻页），没有重新截图。'
+            + '确实要一张新的就加 force:true。',
+          file: null,
+        }
+      }
+
+      // ★ 按编号裁那一处（改进，省图）：eye_shot({ i }) —— 自动把那一处的矩形算出来，
+      //   只截一小块。坐标换算是本文件的老规矩：元素在其所在窗口里量到的是**局部坐标**，
+      //   加上该窗口的**页面矩形**（frameRects，主文档左上角为原点、含滚动量）才是
+      //   CDP clip 要的**页面坐标**。量不到就不猜 —— 退回整屏截并明说。
+      let clipFallback = null
+      if (locI) {
+        const hit = await SEE.findElementByLocator(work, { i: locI }).catch(() => ({ found: false }))
+        if (!hit?.found) {
+          return {
+            ok: false, category: 'ARG', error: 'ELEMENT_NOT_FOUND', i: locI,
+            hint: hit?.hint ?? '这个编号已经失效了（页面变了、翻过页，或者是上一次看的时候给的）。重新 eye_see 拿新编号。',
+          }
+        }
+        const rid = (r) => (typeof r.frame === 'string' ? r.frame : (r.frame && r.frame.id) || r.frameId || null)
+        const base = (Array.isArray(frameRects) ? frameRects : []).find((r) => rid(r) === hit.frameId)
+          ?? (Array.isArray(frameRects) ? frameRects[0] : null)
+        const PAD = 6
+        if (base && Number.isFinite(hit.w) && Number.isFinite(hit.h) && hit.w > 0 && hit.h > 0) {
+          clip = {
+            x: Math.max(0, Math.round(base.x + hit.x - hit.w / 2) - PAD),
+            y: Math.max(0, Math.round(base.y + hit.y - hit.h / 2) - PAD),
+            width: Math.round(hit.w) + PAD * 2,
+            height: Math.round(hit.h) + PAD * 2,
+          }
+        } else {
+          // 量不到窗口矩形 / 元素没尺寸 → 不猜一个裁剪框，退回整屏并如实说
+          clip = null
+          clipFallback = '按编号裁剪失败（量不到那一处所在的窗口矩形，或元素没有尺寸）—— 已退回整屏截图。'
+        }
+      }
 
       // ★ 整页截图**分段** —— 实测教训：一张 2.06 MB 的整页图，模型原话
       //   「the preview is cropped」，截了等于没截，还白烧上下文。
@@ -631,7 +697,7 @@ function applyInner(ctx, config = {}) {
           const shots = []
           for (const [i, c] of segs.entries()) {
             // eslint-disable-next-line no-await-in-loop
-            const s = await takeShot(ctx, work, { clip: c, label: `${label}-seg${i + 1}` })
+            const s = await takeShot(ctx, work, { clip: c, label: `${label}-seg${i + 1}`, embed })
             shots.push({ ...s, from: c.y, to: c.y + c.height })
           }
           const images = shots.map((s) => s.image).filter(Boolean)
@@ -662,14 +728,16 @@ function applyInner(ctx, config = {}) {
             })(),
           }
           if (!images.length) {
-            out.hint = '分段图没能作为图片送回来。用 read_image 读 file 路径；再不行用手记下来交给用户。'
+            out.hint = embed
+              ? '分段图没能作为图片送回来。用 read_image 读 file 路径；再不行用手记下来交给用户。'
+              : '已按 embed:false 只落盘（本就没嵌图）。把 file 路径发给复核员，它用 read_image 读。'
           }
           if (images.length) out.__images = images
           return out
         }
       }
 
-      const r = await takeShot(ctx, work, { full, label, clip })
+      const r = await takeShot(ctx, work, { full, label, clip, embed })
       const shotId = B.rememberShot?.({ targetId: work.targetId, url, scrollY, frameRects, at: Date.now() }) ?? null
 
       const out = {
@@ -681,8 +749,11 @@ function applyInner(ctx, config = {}) {
         url,
       }
       if (r.downscaled) out.note = r.note
+      if (clipFallback) out.note = out.note ? `${out.note}；${clipFallback}` : clipFallback
       if (!r.image) {
-        out.hint = '图没能作为图片送回来（imageAttached:false）。用 read_image 读 file 那个路径；再不行就手记下来交给用户。'
+        out.hint = embed
+          ? '图没能作为图片送回来（imageAttached:false）。用 read_image 读 file 那个路径；再不行就手记下来交给用户。'
+          : '已按 embed:false 只落盘（本就没嵌图）。把 file 路径发给复核员，它用 read_image 读。'
       }
       if (r.image) out.__images = [r.image]
       return out
@@ -712,6 +783,7 @@ function applyInner(ctx, config = {}) {
       const work = await getWork()
       const r = await SEE.readAreas(work, { full: false })
       const areas = r.areas ?? []
+      noteSig(r)
       // ★ 三处共用同一个口径（gate.reviewContext）：题目身份 = 全量清单哈希，
       //   ignore 只筛"要复核哪几处"，并按身份记进 session —— hand_verdict / hand_submit 取同一份。
       //   （2.0.1 修复：早先这里带 ignore、另两处不带，哈希对不上 → 用了 ignore 就永远交不了卷。）
@@ -723,6 +795,16 @@ function applyInner(ctx, config = {}) {
 
       const store = session.verdicts[lh] ?? {}
       const entries = Object.entries(store).map(([id, v]) => ({ id, ...v }))
+
+      // ★ 待补特写清单（改进，__need_shot 闭环的一半）：有复核员登记了"看不清"，
+      //   这里把每一处连同它的编号/位置摊开——主脑拿 i 直接 eye_shot({ i }) 裁特写发过去。
+      const wantShots = []
+      for (const e of entries) {
+        for (const n of (e.needShots ?? [])) {
+          const a = ledger.find((x) => x.n === n)
+          wantShots.push({ judge: e.id.slice(0, 8), n, i: a?.i ?? null, kind: a?.kind ?? null })
+        }
+      }
 
       let submitFound = true
       if (submitButton) {
@@ -746,6 +828,11 @@ function applyInner(ctx, config = {}) {
           write: areas.filter((a) => a.kind === 'write').length,
         },
         judges: gate.judges,
+        ...(wantShots.length ? {
+          wantShots,
+          wantShotsHint: '有复核员看不清这几处，在等特写。用 eye_shot({ i }) 按编号裁那一处'
+            + '（小的很，省上下文），把图发给对应复核员，等它重新登记。',
+        } : {}),
         problems: gate.problems.map((p) => p.text),
         // ★ 这一页现在有哪些"能点的东西"，**带刚刚重新读到的编号**。
         //   为什么要给：编号只在"最近一次看"有效（eye_see / eye_check / hand_verdict 都会重新编号）。
@@ -1045,6 +1132,7 @@ function applyInner(ctx, config = {}) {
       const before = await work.eval('location.href').catch(() => null)
       const r = await SEE.readAreas(work, { full: false })
       const areas = r.areas ?? []
+      noteSig(r)
       // ★ 和发票据那次同一个口径（gate.reviewContext）：身份 = 全量清单哈希，
       //   ignore 从 session 取 —— eye_check({ignore}) 存进去的那份。
       //   （2.0.1 修复：早先这里不带 ignore → 票据永远 STALE_TOKEN、被忽略处又报空。）
@@ -1081,6 +1169,7 @@ function applyInner(ctx, config = {}) {
 
       // 交完回读：分数 / 是不是弹出了二次确认
       const after = await SEE.readAreas(work, { full: false }).catch(() => ({ areas: [] }))
+      noteSig(after)
       const scoreText = await work.eval(
         `(() => { const t = document.body ? document.body.innerText : '';`
         + ` const m = t.match(/(\\d+(?:\\.\\d+)?)\\s*\\/\\s*(\\d+(?:\\.\\d+)?)/);`
@@ -1207,10 +1296,11 @@ function applyInner(ctx, config = {}) {
       additionalProperties: false,
     },
     isConcurrencySafe: () => true,
-    async run({ picks, uncertain, round, note }, exec) {
+    async run({ picks, uncertain, round, note, needShots }, exec) {
       const work = await getWork()
       const r = await SEE.readAreas(work, { full: false })
       const areas = r.areas ?? []
+      noteSig(r)
       // ★ 和 eye_check / hand_submit 同一个口径（gate.reviewContext）：
       //   身份 = 全量清单哈希；ignore 从 session 取（eye_check 存的那份，没有就全量复核）。
       //   bad 按"页面上真实有的"判（复核员手里可能是更早的全量清单，多给不算错），
@@ -1229,7 +1319,8 @@ function applyInner(ctx, config = {}) {
           example: '{"picks":{"1":["B"],"2":["对"]},"uncertain":[3]}',
         }
       }
-      const missing = [...required].filter((n) => !(n in picks) && !uncertain.includes(Number(n)))
+      // needShots 里的编号是"看不清、等主脑补特写"——不是没答，不算 REVIEW_INCOMPLETE
+      const missing = [...required].filter((n) => !(n in picks) && !uncertain.includes(Number(n)) && !needShots.includes(Number(n)))
       if (missing.length) {
         return {
           ok: false, category: 'USAGE', error: 'REVIEW_INCOMPLETE',
@@ -1243,7 +1334,7 @@ function applyInner(ctx, config = {}) {
       const judgeId = exec?.agent?.id ?? 'unknown-reviewer'
       session.verdicts[lh] = session.verdicts[lh] ?? {}
       session.verdicts = GATE.recordVerdict(session.verdicts, {
-        ledgerHash: lh, judgeId, picks, uncertain, round, note,
+        ledgerHash: lh, judgeId, picks, uncertain, needShots, round, note,
       })
       session.lastToken = null       // 登记变了 → 旧票据作废（页面指纹里也含 filled，这里再保一道）
 
@@ -1252,6 +1343,7 @@ function applyInner(ctx, config = {}) {
         ok: true,
         registered: s.registered,
         judges: s.judges,
+        ...(needShots.length ? { needShots, hint: `已记下：第 ${needShots.join('、')} 处等主脑补特写。主脑会用 eye_shot 裁那一处发给你，收到后重新登记。` } : {}),
         note: '已登记。主脑会拿你这份、另一个复核员那份、以及它自己在页面上选的那份，三份比对。',
       }
     },
