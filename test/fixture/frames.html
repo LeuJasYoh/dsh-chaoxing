@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>fixture-frames</title>
+<!--
+  L2 fixture：外层页 + 一个**跨域** iframe（端口不同 = 源不同）。
+  iframe 位置写死（top:600 left:50 400x300），供 frameRects / hitFrame 对拍。
+  服务器会把 __FRAME_ORIGIN__ 换成另一个源（另一个端口）。
+-->
+<style>
+  body { margin: 0; font: 14px/1.6 sans-serif; }
+  .pad { padding: 16px; }
+</style>
+</head>
+<body>
+  <div class="pad">
+    <p>外层页面：往下六百像素处内嵌了一个跨域窗口。</p>
+    <button type="button" id="outer-btn">外层按钮</button>
+  </div>
+  <iframe id="fr" src="__FRAME_ORIGIN__/frame.html"
+          style="position:absolute;top:600px;left:50px;width:400px;height:300px;border:0"></iframe>
+</body>
+</html>

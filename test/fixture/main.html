@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>fixture-main</title>
+<!--
+  L2 fixture：编号 / 点击 / 写入 / 截图裁剪的确定性页面。
+  结构刻意简单且**自上而下顺序固定**，eye_see 报出来的顺序必须是：
+    pick(3 选 1，B 选中) → pick(下拉 3 项，X 选中) → pick(复选 2 项，无选中)
+    → write(文本域，空) → button(提交)
+-->
+<style>
+  body { margin: 0; font: 14px/1.6 sans-serif; }
+  .q { margin: 14px; padding: 8px; border: 1px solid #ddd; }
+  .q p { margin: 0 0 6px; font-weight: bold; }
+  label { display: block; }
+  textarea { width: 92%; height: 52px; }
+  #btn { margin: 4px 14px 16px; padding: 8px 28px; }
+</style>
+</head>
+<body>
+  <div class="q" id="q1">
+    <p>第一处 单选</p>
+    <label><input type="radio" name="q1" value="A"> A 选项甲</label>
+    <label><input type="radio" name="q1" value="B" checked> B 选项乙</label>
+    <label><input type="radio" name="q1" value="C"> C 选项丙</label>
+  </div>
+  <div class="q" id="q2">
+    <p>第二处 下拉</p>
+    <select name="q2">
+      <option value="x" selected>X 项</option>
+      <option value="y">Y 项</option>
+      <option value="z">Z 项</option>
+    </select>
+  </div>
+  <div class="q" id="q3">
+    <p>第三处 多选</p>
+    <label><input type="checkbox" name="q3" value="1"> 甲项</label>
+    <label><input type="checkbox" name="q3" value="2"> 乙项</label>
+  </div>
+  <div class="q" id="q4">
+    <p>第四处 写字</p>
+    <textarea name="q4" placeholder="在这里写"></textarea>
+  </div>
+  <button type="button" id="btn">提交</button>
+</body>
+</html>

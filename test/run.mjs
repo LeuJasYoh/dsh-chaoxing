@@ -1,12 +1,15 @@
 /**
  * test/run.mjs —— 断言集
  *
- * 分五组：
+ * 分六组：
  *   A 参数校验（args.mjs）  —— 格式错必须拦住，且**零副作用**
  *   B 复核闸门（gate.mjs）  —— 七条 + 票据 + 登记覆盖
  *   C 工具表面             —— 16 个工具、前缀、并发标志
  *   D 痕迹检查             —— 代码/提示词里不许有平台字样
  *   E 预设自检             —— cordis.patch.yml / package.json / 提示词对得上
+ *   G socket 健康层 + 浏览器发现 —— P0-1 挂起修复 / E-9 跨平台（不需要真浏览器）
+ *
+ * 另有 test/live.mjs（npm run test:live）：真 chromium 的 fixture 测试台。
  *
  * 跑法：npm test
  */
@@ -828,6 +831,151 @@ t('E12 铁律六条还在', () => {
       ta('F1 装载成功（apply 没抛）', false, `apply 抛错：${String(e?.message ?? e)}`)
     }
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// G socket 健康层 + 跨平台浏览器发现（P0-1 / E-9）—— 不需要真浏览器
+//
+// P0-1 背景：旧 openSocket 的 send() 只进不出 —— 浏览器一死，pending 里的
+// promise 永远挂起，每个工具调用跟着卡死，且没有任何地方能发现 socket 死了。
+// 这里用一个「只握手、永不回帧」的最小 WebSocket 服务器做确定性验证：
+// 超时路径与死亡广播都能在毫秒级验完，不依赖 chromium。
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function tAsync(name, fn) {
+  try {
+    await fn()
+    pass++
+  } catch (e) {
+    fails.push(`${name}\n      ${String(e?.message ?? e).split('\n')[0]}`)
+  }
+}
+
+{
+  const { createServer } = await import('node:http')
+  const { createHash } = await import('node:crypto')
+  const BR = await import('../lib/browser.mjs')
+
+  /** 最小 WebSocket 服务器：只完成握手，之后永远不回帧、不主动关 */
+  const startDummyWs = () => new Promise((resolve, reject) => {
+    const sockets = new Set()
+    const server = createServer((req, res) => { res.writeHead(426); res.end() })
+    server.on('upgrade', (req, socket) => {
+      const key = req.headers['sec-websocket-key']
+      const accept = createHash('sha1').update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64')
+      socket.write(
+        'HTTP/1.1 101 Switching Protocols\r\n'
+        + 'Upgrade: websocket\r\n'
+        + 'Connection: Upgrade\r\n'
+        + `Sec-WebSocket-Accept: ${accept}\r\n\r\n`,
+      )
+      sockets.add(socket)
+      socket.on('error', () => sockets.delete(socket))
+      socket.on('close', () => sockets.delete(socket))
+    })
+    server.on('error', reject)
+    server.listen(0, '127.0.0.1', () => resolve({
+      url: `ws://127.0.0.1:${server.address().port}`,
+      close: () => { for (const s of sockets) s.destroy(); server.close() },
+    }))
+  })
+
+  await tAsync('G1 openSocket：对端不回话 → SOCKET_TIMEOUT，不挂死（P0-1）', async () => {
+    const d = await startDummyWs()
+    try {
+      const sock = BR.openSocket(d.url, { sendTimeoutMs: 250 })
+      await sock.ready
+      const t0 = Date.now()
+      let err = null
+      try { await sock.send('Target.getTargets') } catch (e) { err = e }
+      const ms = Date.now() - t0
+      eq(err?.code, 'SOCKET_TIMEOUT', `应报 SOCKET_TIMEOUT，实际 ${err?.code}: ${err?.message}`)
+      ta(ms < 3000, `应在超时后快速失败，实际 ${ms}ms`)
+      sock.close()
+    } finally { d.close() }
+  })
+
+  await tAsync('G2 openSocket：对端消失 → SOCKET_DEAD 广播 + 挂起的命令立即失败（P0-1）', async () => {
+    const d = await startDummyWs()
+    try {
+      const sock = BR.openSocket(d.url, { sendTimeoutMs: 60_000 })
+      await sock.ready
+      let deadInfo = null
+      const off = sock.onDead((x) => { deadInfo = x })
+      // 先发一条永远不会有回复的命令（注册进 pending），再弄死对端
+      const inflight = sock.send('Target.getTargets').catch((e) => e)
+      d.close()
+      const err = await inflight
+      const t0 = Date.now()
+      while (Date.now() - t0 < 2000 && !deadInfo) await new Promise((r) => setTimeout(r, 50))
+      ta(!!deadInfo, 'onDead 应收到广播')
+      eq(sock.isAlive(), false, 'isAlive 应为 false')
+      eq(err?.code, 'SOCKET_DEAD', `挂起的命令应被 SOCKET_DEAD 打醒，实际 ${err?.code}`)
+      // 死之后再发 → 立即拒绝（不再进 pending、不再等）
+      let err2 = null
+      try { await sock.send('Target.getTargets') } catch (e) { err2 = e }
+      eq(err2?.code, 'SOCKET_DEAD')
+      off()
+    } finally { d.close() }
+  })
+
+  await tAsync('G3 openSocket：握手后 isAlive / on / close 都照常', async () => {
+    const d = await startDummyWs()
+    try {
+      const sock = BR.openSocket(d.url, { sendTimeoutMs: 5000 })
+      await sock.ready
+      eq(sock.isAlive(), true, '握手后应活着')
+      eq(sock.dead, null, '不该有死因')
+      ta(typeof sock.on('Target.attachedToTarget', () => {}) === 'function', '事件订阅应可用')
+      sock.close()
+    } finally { d.close() }
+  })
+
+  await tAsync('G4 findBrowserExe：环境变量优先；指错文件返回 null（不悄悄换）', async () => {
+    const prev = process.env.DSH_BROWSER_PATH
+    try {
+      process.env.DSH_BROWSER_PATH = '/definitely/not/here'
+      eq(BR.findBrowserExe(), null, '设了却不存在 → null（调用方据此报错）')
+      // 用一个必然存在的文件当"浏览器"：只验优先级，不启动它
+      process.env.DSH_BROWSER_PATH = process.execPath
+      const r = BR.findBrowserExe()
+      eq(r?.via, 'DSH_BROWSER_PATH')
+      eq(r?.exe, process.execPath)
+    } finally {
+      if (prev === undefined) delete process.env.DSH_BROWSER_PATH
+      else process.env.DSH_BROWSER_PATH = prev
+    }
+  })
+
+  await tAsync('G5 findBrowserExe：不带环境变量 → 按平台/PATH 发现（或明说没有）', async () => {
+    const prev = process.env.DSH_BROWSER_PATH
+    try {
+      delete process.env.DSH_BROWSER_PATH
+      const r = BR.findBrowserExe()
+      if (r) {
+        ta(['platform', 'PATH'].includes(r.via), `via 应是 platform/PATH，实际 ${r.via}`)
+        ta(typeof r.exe === 'string' && r.exe.length > 0, '应给出可执行文件路径')
+      }
+      // 没有浏览器也允许（L2 会跳过、launchBrowser 会给安装提示）
+    } finally {
+      if (prev === undefined) delete process.env.DSH_BROWSER_PATH
+      else process.env.DSH_BROWSER_PATH = prev
+    }
+  })
+
+  await tAsync('G6 launchBrowser：DSH_BROWSER_PATH 指错 → 报错点到环境变量', async () => {
+    const prev = process.env.DSH_BROWSER_PATH
+    try {
+      process.env.DSH_BROWSER_PATH = '/definitely/not/here'
+      let err = null
+      try { await BR.launchBrowser({ port: 59999 }) } catch (e) { err = e }
+      ta(!!err, '应抛错')
+      ta(/DSH_BROWSER_PATH/.test(String(err?.message)), `报错应点到环境变量: ${err?.message}`)
+    } finally {
+      if (prev === undefined) delete process.env.DSH_BROWSER_PATH
+      else process.env.DSH_BROWSER_PATH = prev
+    }
+  })
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

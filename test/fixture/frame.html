@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>fixture-frame-login</title>
+<!--
+  L2 fixture：跨域子窗口内容 = 一个登录表单。
+  两个用途：
+    ① 嵌进 frames.html 当跨域 iframe → 验 loginState 必须扫所有窗口（P0-2 回归）
+    ② 直接当顶层页打开 → 验 loginState 主窗口命中
+-->
+<style>
+  body { margin: 0; font: 14px/1.6 sans-serif; padding: 12px; }
+  p { margin: 0 0 8px; }
+  input { display: block; margin: 6px 0; width: 92%; }
+  button { margin-top: 8px; }
+</style>
+</head>
+<body>
+  <form id="loginform" onsubmit="return false">
+    <p>内嵌登录区</p>
+    <input type="text" name="user" placeholder="账号">
+    <input type="password" name="pwd" placeholder="密码">
+    <button type="submit">登录</button>
+  </form>
+</body>
+</html>

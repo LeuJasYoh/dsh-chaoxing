@@ -655,7 +655,14 @@ function applyInner(ctx, config = {}) {
       //   CDP clip 要的**页面坐标**。量不到就不猜 —— 退回整屏截并明说。
       let clipFallback = null
       if (locI) {
-        const hit = await SEE.findElementByLocator(work, { i: locI }).catch(() => ({ found: false }))
+        let hit = await SEE.findElementByLocator(work, { i: locI }).catch(() => ({ found: false }))
+        // ★ pick 的区自己身上没记号（记号挂在各选项上，编号是 <区编号>o<k>）——
+        //   精确找不到时退回"整组选项的并集"：模型眼里的"这一处"就是整道题，
+        //   并集才框得住它。只框第一个选项的话，特写只剩下一条，等于没截。
+        if (!hit?.found) {
+          const g = await SEE.findGroupRectByLocator(work, locI).catch(() => null)
+          if (g?.found) hit = g
+        }
         if (!hit?.found) {
           return {
             ok: false, category: 'ARG', error: 'ELEMENT_NOT_FOUND', i: locI,

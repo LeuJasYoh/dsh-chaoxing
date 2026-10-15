@@ -6,7 +6,8 @@
   "license": "MIT",
   "main": "./index.js",
   "scripts": {
-    "test": "node test/run.mjs"
+    "test": "node test/run.mjs",
+    "test:live": "node test/live.mjs"
   },
   "exports": {
     ".": "./index.js",
