@@ -1,0 +1,46 @@
+{
+  "name": "dsh-xuexi-next",
+  "version": "0.1.0",
+  "description": "DSH 网课模式重写版：先把手和眼还给模型，再做可选的业务流程",
+  "type": "module",
+  "license": "MIT",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "prompts",
+    "tools",
+    "lib",
+    "docs"
+  ],
+  "scripts": {
+    "test": "node test/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "agent-preset",
+    "browser-automation",
+    "cdp"
+  ],
+  "dsh": {
+    "id": "dsh-xuexi-next",
+    "name": "网课模式（重写）",
+    "version": "0.1.0",
+    "engines": {
+      "dsh": ">=0.2.0"
+    },
+    "permissions": "注册 Agent 预设, 系统提示词注入, 工具注册",
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}

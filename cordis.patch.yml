@@ -1,0 +1,56 @@
+# dsh-xuexi-next Cordis 补丁
+#
+# 作用只有一个：注册新的 Agent 预设（模式）。
+# 工具和提示词由插件 index.js 在这个预设作用域里注册。
+#
+# 重要：插件只挂在 preset.plugins 下，不要往根作用域 include。
+# 否则标准模式也会出现网课工具，且插件可能被挂载两次。
+#
+# 上下文压缩三件套必须放在 isolate group 里：
+#   - compaction-basic 提供 compaction 服务
+#   - command-compact 注册 /compact 命令
+#   - tool-result-pruner 提供 toolResultPruner 服务
+# 提供服务且不 isolate 会导致 preset 的 leaked services 检查失败。
+
+- insert:
+    - id: preset-xuexi-next
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: xuexi-next
+        name: 网课模式（重写）
+        description: 重写中的网课模式：手眼优先，业务后置
+        order: 21
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: 你是网课助手：先观察，再决定，最后亲手操作并验证。
+              includeRuntimeContext: false
+
+          - id: xuexi-next
+            name: dsh-xuexi-next
+            config: {}
+
+          # 文件与图片读取：复核、截图落盘、笔记都需要
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+
+          # 上下文压缩：/compact + 自动压缩 + 工具结果修剪
+          # isolate 是硬要求，不要拆开平铺。
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024

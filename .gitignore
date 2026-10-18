@@ -1,0 +1,4 @@
+node_modules/
+.xuexi/
+*.log
+*.tmp
