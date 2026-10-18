@@ -18,11 +18,16 @@
   - `tool-result-pruner`（工具结果修剪）
 - 加载 `tool-fs`（read/write/edit/read_image）。
 
+## 设计文档
+
+- [浏览器工具契约 v1](docs/design/tool-contract.md)：后台/前台双模式、工具命名、IO 结构、滚动域模型
+- [超星章节 DOM 与滚动观察](docs/research/chaoxing-chapter-dom.md)：章节选择、嵌套滚动、PDF/iframe 实测记录
+
 ## 尚未完成
 
-- 工具集设计（先讨论，不写实现）；
+- 按 v1 契约实现工具（当前只有 `xuexi_health`）；
 - CDP 浏览器接入；
-- 页面观察/点击/输入模型；
+- 页面观察/点击/滚动/媒体控制实现；
 - 复核/提交等业务流程（后续决定是否属于插件核心）。
 
 ## 验证
