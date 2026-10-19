@@ -61,7 +61,8 @@ const output = {
 
 /**
  * 注册预设作用域里的所有工具。
- * 目前只有健康检查；真正的工具集等我们讨论完再实现。
+ * 当前只实现 lib/cdp + cxsecret + page_questions 这条题目读取竖切；
+ * 其余手眼工具等后续再接入。
  */
 export function apply(ctx, config = {}) {
   const systemPrompt = ctx.get?.('systemPrompt')
