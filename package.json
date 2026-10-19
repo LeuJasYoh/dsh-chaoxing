@@ -19,9 +19,10 @@
     "docs"
   ],
   "scripts": {
-    "test": "node test/smoke.mjs && node test/cxsecret.test.mjs",
+    "test": "node test/smoke.mjs && node test/cxsecret.test.mjs && node test/tasks.test.mjs",
     "test:live": "node test/live-questions.mjs",
-    "test:live:plain": "node test/live-plain.mjs"
+    "test:live:plain": "node test/live-plain.mjs",
+    "test:live:tasks": "node test/live-tasks.mjs"
   },
   "engines": {
     "node": ">=20"
