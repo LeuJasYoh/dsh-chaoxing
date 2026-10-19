@@ -1,0 +1,180 @@
+# 开发进度与下一阶段路线
+
+更新时间：2026-10-19
+当前版本：0.1.0
+当前阶段：P0–P4 已完成，P5 观察/句柄层留到下一阶段。
+
+## 一、当前已经完成
+
+### P0 插件骨架与 DSH 对齐
+
+- 新的 DSH Agent 预设：xuexi-next（网课模式（重写））；
+- 命名导出 name / inject / apply，无 default export；
+- 工具与提示词都在 apply 内注册；
+- 工具注册和 CDP 会话清理放进 ctx.effect；
+- 预设 patch 只挂在 preset.plugins 下；
+- 压缩三件套在 isolate group 中；
+- 补齐 Bundle 显示元数据：locale/en.json、locale/zh.json、icon.svg；
+- package.json 的 dsh.bundle.patch、exports、files 已对齐当前 DSH Bundle 规范。
+
+### P1 设计与研究
+
+- 浏览器工具契约 v1；
+- 超星章节 DOM 与滚动观察；
+- 学习通题目页与字体加密观察；
+- page_questions 设计；
+- 任务点分析内部小部件设计；
+- 通用滚动部件与工具设计。
+
+### P2 题目读取
+
+- page_questions：只读读取题目、题型、选项、当前选择；
+- 嵌套 frame 查找；
+- 内嵌字体解码与 plain / decoded / partial / unsupported / failed 状态；
+- 稳定 element_id 句柄预留；
+- 真实页面已验证。
+
+### P3 任务点内部小部件
+
+不是 Agent 工具，是内部复用模块：
+
+- 任务点数量分析；
+- 任务点完成情况分析；
+- 完成类优先、aria 辅助、冲突标记；
+- 章节未完成数交叉校验；
+- coverage / unobservedIncomplete；
+- 真实页面验证 7 个任务点全部完成，其中 4 个 aria 过期冲突被正确标出。
+
+### P4 滚动部件与工具
+
+内部部件：
+
+- 就绪等待 waitFor；
+- 滚动域指标与原子滚动；
+- 任务点目标解析与页面滚入视口；
+- PDF objectid → panView frame 解析；
+- 内部慢翻 readDocument（尚未暴露成工具）。
+
+工具：
+
+- scroll_to：把指定 job_id 的任务点滚入视口；
+- scroll_domain：原子滚动一个 frame 文档；
+- 只支持 background；
+- 页面隐藏时原生 scroll 事件为 0，需要显式 dispatch_scroll 时由调用方声明。
+
+## 二、验证结论
+
+已经执行：
+
+- 25 个 JS/MJS 文件 node --check；
+- package.json、locale JSON 解析；
+- cordis.patch.yml 使用 DSH 自带 js-yaml 解析，结构与模板一致；
+- npm pack --dry-run，打包内容包含 tools/lib/prompts/cordis.patch.yml/locale/icon；
+- npm test 四组全部通过；
+- 真实页面工具组装测试：
+  - 7 个任务点全部能被 scroll_to 滚入视口；
+  - 7 个 PDF 全部能找到独立 panView；
+  - 7 个 scroll_domain 全部 at_bottom=true，底部间隙 ≤ 0.4px；
+  - 错误参数返回对应错误码。
+
+验证边界：
+
+- 还没有在真实 DSH 中安装并激活 Bundle；
+- 还没有用未完成 PDF 验证“完成状态真实翻转”；
+- 还没有在真正延迟加载的页面验证 waitFor 重试；
+- 字体表 provenance/许可证仍未最终确认。
+
+## 三、已知缺口与设计债
+
+1. 观察/句柄层未实现：Agent 目前拿不到 job_id / frame_id / scroll_domain。
+2. 标签层未实现：进入章节后识别标签、只处理当前标签、完成后切下一个。
+3. 工具契约与当前实现有偏差：
+   - scroll_domain 当前使用 frame_id；
+   - scroll_to 是新工具，不在 v1 契约中；
+   - page_questions 是先做竖切。
+   
+   这些偏差是主动演进，不是错误；等观察层确定后统一回写契约，不为了旧契约限制新结构。
+
+4. 只有 frame document 滚动域，元素滚动域尚未扩展。
+5. foreground 模式未实现。
+6. 慢翻 readDocument 未暴露成 Agent 工具。
+7. 真实 DSH 安装、预设激活、模型工具列表验证未做。
+8. 未完成 PDF 的完成状态翻转未验证。
+9. 字体对照表 table.json 的来源/再分发许可未定。
+
+## 四、未来开发
+
+### P5 观察/句柄层（下一阶段第一项，已确定留到下次开发）
+
+目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。
+
+至少需要：
+
+- 当前章节有哪些任务点；
+- 每个任务点的 job_id、类型、标题、完成状态；
+- 每个任务点是否已加载；
+- PDF 对应的 panView frame；
+- 当前页面可滚动域；
+- 稳定 element_id 与 frame_id。
+
+验收：
+
+- Agent 能在真实 DSH 会话里先观察，再调用 scroll_to / scroll_domain；
+- 观察结果能说明“没看全”；
+- 不按文字猜元素。
+
+### P6 标签层
+
+- 进入章节先识别标签；
+- 只处理当前标签；
+- 当前标签完成后显式切下一个；
+- 不强行一次性加载全部标签。
+
+### P7 其余手眼工具
+
+- element_click；
+- page_navigate；
+- media_play / media_pause；
+- 截图保底（图片题/无法解密时）；
+- 元素滚动域扩展；
+- 视需要再讨论 foreground。
+
+### P8 端到端与真实 DSH 验证
+
+- 安装 Bundle 到 DSH profile；
+- 验证预设激活、显示元数据、工具列表；
+- 真实 Agent 会话跑通：
+  - 识别标签；
+  - 观察任务点；
+  - 滚动到任务点；
+  - 翻阅 PDF；
+  - 重新观察任务点状态；
+- 用未完成 PDF 验证完成状态翻转；
+- 真实延迟加载页面验证 waitFor。
+
+### P9 契约、许可证与发布
+
+- 根据观察层回写工具契约；
+- 处理字体表许可证；
+- 检查依赖许可证；
+- 更新 README/CHANGELOG；
+- 推送与发布。
+
+## 五、下一会话从这里开始
+
+1. 先读本文件；
+2. 做 P5 观察/句柄层设计，不直接继续堆工具；
+3. 观察层稳定后再考虑 P6/P7；
+4. 真实 DSH 安装验证放在 P8，不要在观察层不稳时提前端到端；
+5. 保持只读验证习惯：没有明确授权，不点击答案、不提交、不改变学习进度。
+
+## 六、测试命令
+
+~~~bash
+npm test
+npm run test:live
+npm run test:live:plain
+npm run test:live:tasks
+npm run test:live:scroll
+npm run test:live:tools
+~~~
