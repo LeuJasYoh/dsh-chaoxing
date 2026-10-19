@@ -9,4 +9,8 @@
 - `tasks/collect.mjs`：只读采集当前标签内任务点外壳与章节目录行
 - `tasks/count.mjs`：内部小部件：任务点数量分析
 - `tasks/completion.mjs`：内部小部件：任务点完成情况分析
+- `scroll/readiness.mjs`：就绪等待/轮询
+- `scroll/domain.mjs`：滚动域指标与原子滚动
+- `scroll/target.mjs`：任务点目标解析与页面滚入视口
+- `scroll/document.mjs`：PDF frame/objectid 解析与内部慢翻
 - `vendor/typr-bundle.mjs`：MIT 许可的 Typr.js 字体解析器

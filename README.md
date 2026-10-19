@@ -15,6 +15,9 @@
 - `cxsecret` 字体解密：解析页面内嵌 TTF，还原被替换的汉字；
 - 明文/加密混合检测：没有真正加密字体时直接返回原文；
 - 内部任务点分析小部件：数量与完成情况（不是 Agent 工具）；
+- 内部滚动部件：就绪等待、滚动域、任务点滚入视口、PDF 解析与慢翻；
+- `scroll_to`：把任务点滚入视口；
+- `scroll_domain`：原子滚动一个 frame 文档；
 - `xuexi_health` 诊断工具；
 - 冒烟测试与字体解密单元测试；真实浏览器联调脚本。
 
@@ -23,13 +26,15 @@
 - [浏览器工具契约 v1](docs/design/tool-contract.md)
 - [page_questions 设计](docs/design/page-questions.md)
 - [任务点分析内部小部件设计](docs/design/task-point-analysis-components.md)
+- [通用滚动部件与工具设计](docs/design/scroll-components.md)
 - [学习通题目页与字体加密观察](docs/research/quiz-encryption-observations.md)
 - [超星章节 DOM 与滚动观察](docs/research/chaoxing-chapter-dom.md)
 - [DSH 集成说明](docs/dsh-integration.md)
 
 ## 尚未完成
 
-- `page_snapshot` / `page_outline` / `element_click` / `scroll_domain` / `page_navigate` / `media_*`；
+- `page_snapshot` / `page_outline` / `element_click` / `page_navigate` / `media_*`；
+- 慢翻文档的 Agent 工具封装（目前只有内部部件）；
 - 截图保底工具（图片题/无法解密时）；
 - 提交、答案复核等业务流程（后续决定）。
 
@@ -45,6 +50,8 @@ npm test
 npm run test:live
 npm run test:live:plain
 npm run test:live:tasks
+npm run test:live:scroll
+npm run test:live:tools
 ```
 
 ## 注意
