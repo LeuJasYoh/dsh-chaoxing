@@ -13,13 +13,14 @@ const root = join(here, '..')
 const registered = []
 const sections = []
 const effects = []
+const cleanups = []
 const ctx = {
   tools: { register: (def) => registered.push(def) },
   get: (name) => {
     if (name === 'systemPrompt') return { section: (s) => { sections.push(s) } }
     return undefined
   },
-  effect: (fn) => { effects.push(fn); fn() },
+  effect: (fn) => { effects.push(fn); const cleanup = fn(); if (typeof cleanup === 'function') cleanups.push(cleanup) },
 }
 
 const plugin = await import(pathToFileURL(join(root, 'index.js')).href)
@@ -31,6 +32,8 @@ assert.equal(plugin.default, undefined, '不要 export default（会丢掉 injec
 const result = plugin.apply(ctx, {})
 assert.equal(result.name, 'dsh-xuexi-next')
 assert.equal(sections.length, 1, '应注入一次模式提示词')
+assert.equal(effects.length, 2, '提示词与工具注册都应放在 ctx.effect 中')
+assert.ok(cleanups.length >= 1, '工具注册应返回会话清理函数')
 assert.match(sections[0].text, /网课模式/)
 assert.match(sections[0].text, /page_questions/)
 assert.match(sections[0].text, /scroll_to/)
@@ -75,5 +78,33 @@ assert.match(patch, /command-compact/)
 assert.match(patch, /compaction-basic/)
 assert.match(patch, /tool-result-pruner/)
 assert.match(patch, /isolate:/)
+
+// Bundle display metadata required by current DSH bundle docs.
+const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
+assert.equal(pkg.dsh.bundle.patch, './cordis.patch.yml')
+assert.ok(pkg.exports['./locale/*.json'])
+assert.ok(pkg.exports['./icon'])
+assert.ok(pkg.files.includes('locale/*.json'))
+assert.ok(pkg.files.includes('icon.svg'))
+for (const locale of ['en', 'zh']) {
+  const meta = JSON.parse(readFileSync(join(root, 'locale', locale + '.json'), 'utf8')).meta
+  assert.equal(typeof meta.title, 'string')
+  assert.equal(typeof meta.description, 'string')
+}
+assert.ok(readFileSync(join(root, 'icon.svg'), 'utf8').includes('<svg'))
+
+// Every registered tool must satisfy the DSH tool definition shape.
+for (const tool of registered) {
+  assert.equal(typeof tool.name, 'string')
+  assert.ok(tool.name.length > 0)
+  assert.equal(typeof tool.description, 'string')
+  assert.equal(tool.parameters.type, 'object')
+  assert.equal(tool.output.schema.type, 'object')
+  assert.equal(typeof tool.output.render, 'function')
+  assert.equal(typeof tool.execute, 'function')
+}
+
+// Dispose the tool effect; this should close the plugin session scope cleanly.
+for (const cleanup of cleanups) cleanup()
 
 console.log('✓ xuexi-next 冒烟测试通过')

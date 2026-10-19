@@ -8,7 +8,9 @@
   "exports": {
     ".": "./index.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
   },
   "files": [
     "index.js",
@@ -16,7 +18,9 @@
     "prompts",
     "tools",
     "lib",
-    "docs"
+    "docs",
+    "locale/*.json",
+    "icon.svg"
   ],
   "scripts": {
     "test": "node test/smoke.mjs && node test/cxsecret.test.mjs && node test/tasks.test.mjs && node test/scroll.test.mjs",

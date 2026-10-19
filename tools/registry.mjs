@@ -21,14 +21,12 @@ export function registerTools(ctx, { version = '0.0.0', config = {}, output, toL
     targetUrlIncludes: config.targetUrlIncludes,
   })
 
-  registerPageQuestions(ctx, { output, toLossless, session })
-  registerScrollTo(ctx, { output, toLossless, session })
-  registerScrollDomain(ctx, { output, toLossless, session })
+  const registerAll = () => {
+    registerPageQuestions(ctx, { output, toLossless, session })
+    registerScrollTo(ctx, { output, toLossless, session })
+    registerScrollDomain(ctx, { output, toLossless, session })
 
-  // Close the CDP websocket when the preset scope is disposed.
-  if (typeof ctx.effect === 'function') ctx.effect(() => () => { session.close() })
-
-  ctx.tools.register({
+    ctx.tools.register({
     name: 'xuexi_health',
     description: '诊断工具：确认 xuexi-next 预设与工具注册链路正常；同时报告当前实现阶段。',
     parameters: {
@@ -49,5 +47,16 @@ export function registerTools(ctx, { version = '0.0.0', config = {}, output, toL
         cdp_endpoint: session.endpoint,
       })
     },
-  })
+    })
+  }
+
+  // DSH convention: register resources inside ctx.effect and return cleanup.
+  if (typeof ctx.effect === 'function') {
+    ctx.effect(() => {
+      registerAll()
+      return () => session.close()
+    })
+  } else {
+    registerAll()
+  }
 }
