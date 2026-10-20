@@ -359,7 +359,14 @@ P5.1 的产出是契约，不是功能。验收方式：
 - element 滚动域需要纳入（例如 #coursetree）；
 - PDF 域在跨域 panView frame 的 document 上。
 
-仍需一个带内容标签、只加载当前标签的页面样本，验证内容标签 active 判定和未加载标签 coverage。
+已补充内容标签页样本：
+
+- 内容标签容器为 div#prev_tab.prev_list，标签项为 ul.prev_ul > li[id^=dct][role=option]；
+- active 在 li 上；title/.spanText 是标签名；
+- 侧栏标签 .tabCatalog > ul > li#tit* 不是内容标签；
+- 有内容标签时，只加载当前标签模块；其他标签的模块 frame 不存在；
+- 当前标签可以没有任务点（例如“笔记”），此时 task_points 返回空 task_points，coverage 仍可为 complete，不是 TAB_UNRESOLVED；
+- 没有 #prev_tab 时，视为全模块内联页，分析当前页面全部模块。
 
 ## 13. 交给 P5.2 的研究问题
 

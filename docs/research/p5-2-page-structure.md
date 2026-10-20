@@ -158,7 +158,79 @@ knowledge frame 中：
 - 全内联页没有内容标签，task_points 应处理“无内容标签”的情况；
 - 完成状态继续复用现有任务点小部件。
 
-仍需补一个样本：
+## 9. 内容标签页补充样本（2026-10-20）
 
-- 一个真正带“视频 / 章节测验”内容标签、且只加载当前标签的页面；
-- 用来验证内容标签 active 判定和未加载标签的 coverage。
+后续一次性只访问一个页面，补充了三个内容标签页样本。
+
+### 样本 A：英语 Unit 2 Stress
+
+- 3 个内容标签：微课 / Video 1 / video 2；
+- 当前标签：微课；
+- 只加载了当前标签的视频模块（frame 摘要：knowledge + 1 video module）；
+- 当前标签有 1 个任务点：微课 Unit 2 stress.mp4；
+- 任务点未完成；
+- 其他两个标签没有加载对应模块 frame。
+
+### 样本 B：生物化学 氨基酸性质
+
+- 3 个内容标签：笔记 / 微课 / 分光光度法；
+- 当前标签：笔记；
+- frame 摘要只有 knowledge，没有模块 frame；
+- 当前标签任务点数量：0；
+- 章节状态：已完成；
+- 说明“当前标签没有任务点”是合法情况，不是错误。
+
+### 样本 C：马原 1.2 世界的多样性统一于物质
+
+- 2 个内容标签：视频 / 章节测验；
+- 当前标签：视频；
+- 只加载了当前标签的视频模块；
+- 当前标签 1 个任务点：视频已完成；
+- 其他标签（章节测验）没有加载对应模块 frame。
+
+## 10. 内容标签 DOM
+
+三页共用同一套结构：
+
+~~~html
+<div class="prev_list" id="prev_tab">
+  <ul class="prev_ul clearfix">
+    <li id="dct1" class="active" title="微课" cardid="..." role="option"
+        onclick="changeDisplayContent(1,3,'...','...','...','');">
+      <div class="prev_white" aria-hidden="true">
+        <span class="num">1</span>
+        <span class="spanText">微课</span>
+      </div>
+    </li>
+    <li id="dct2" title="Video 1" cardid="..." role="option" ...>...</li>
+    <li id="dct3" title="video 2" cardid="..." role="option" ...>...</li>
+  </ul>
+</div>
+~~~
+
+稳定特征：
+
+- 容器：div#prev_tab.prev_list；
+- 直接列表：ul.prev_ul.clearfix；
+- 标签项：li[id^=dct][cardid][role=option]；
+- active 在 li 上；
+- 标题在 li[title] / .spanText；
+- onclick 的 changeDisplayContent(当前序号, 总数, ...) 带有标签总数；
+- 侧栏标签是另一套：.tabCatalog > ul > li#tit1..#tit5，不能混用。
+
+## 11. 页面类型结论
+
+目前确认三种页面：
+
+1. 全模块内联页：没有 #prev_tab，所有模块在同一 knowledge 页面；
+2. 内容标签页：有 #prev_tab，只加载当前标签的模块；
+3. 当前标签不是任务（例如“笔记”）：没有任务点，task_points 返回 0 也是合法结果。
+
+内容标签页的“当前标签任务点”只应分析当前加载的模块，不主动加载其他标签。
+
+## 12. 仍然需要补的样本
+
+- 真实点击/切换内容标签后的加载过程（P6 才会做，P5 不做）；
+- 更多文档类型（PDF/Word/PPT）在同一内容标签页中的表现；
+- OOPIF 跨域模块在标签页中的覆盖。
+

@@ -107,7 +107,7 @@
 ### P5 观察/句柄层（进行中）
 
 - P5.1 观察契约与句柄模型：已定稿，见 docs/design/p5-observation-contract.md
-- P5.2 页面结构调研：全模块内联页已完成，见 docs/research/p5-2-page-structure.md；还需一个带内容标签的页面样本
+- P5.2 页面结构调研：全模块内联页 + 三个内容标签页样本已完成，见 docs/research/p5-2-page-structure.md
 
 目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。
 
