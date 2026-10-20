@@ -80,7 +80,7 @@
 验证边界：
 
 - 还没有在真实 DSH 中安装并激活 Bundle；
-- 还没有用未完成 PDF 验证“完成状态真实翻转”；
+- 未完成 PDF 的慢翻完成状态翻转已在真实页面验证（见 docs/research/pdf-scroll-completion.md）；单步直接跳到底仍待验证；
 - 还没有在真正延迟加载的页面验证 waitFor 重试；
 - 字体表 provenance/许可证仍未最终确认。
 
@@ -201,3 +201,11 @@ npm run test:live:tools
 - npm test 五组通过：
   smoke / cxsecret / tasks / scroll / questions。
 
+
+## 八、2026-10-20 PDF 慢翻完成验证
+
+- 在未完成 PDF 任务点上执行慢翻（300px × 21 步，每步停 1s，补发 scroll）；
+- 父 frame 收到 isFinished；
+- 任务点外壳立即变成 ans-job-finished；
+- 章节行先保持旧值，随后异步更新为完成；
+- 结论：慢翻路径有效；观察层必须分别报告任务点状态和章节行状态，不能把章节目录的短暂旧值当成失败。
