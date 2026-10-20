@@ -4,7 +4,7 @@
 
 - 旧代码归档：`D:\Projects\XueXi\archive\dsh-xuexi-2.3.2`
 - 新代码不 import 旧代码；只在需要查 DSH 协议/历史事故时参考归档。
-- 当前版本：`0.1.0`（题目读取竖切）
+- 当前版本：`0.1.0`（P5 观察/句柄层）
 - 预设：`xuexi-next`（名称「网课模式（重写）」）
 
 ## 当前已完成
@@ -12,12 +12,14 @@
 - 注册新的 DSH Agent 预设；
 - CDP 会话层：单页 target 绑定、frame 树、隔离执行上下文、导航代次；
 - `page_questions`：只读读取学习通测验/作业页面的题目、选项、当前选择；
+- `page_snapshot`：只读观察页面、内容标签、frame 树和滚动域；
+- `task_points`：只读观察当前内容标签的任务点、状态与 PDF 映射；
 - `cxsecret` 字体解密：解析页面内嵌 TTF，还原被替换的汉字；
 - 明文/加密混合检测：没有真正加密字体时直接返回原文；
 - 内部任务点分析小部件：数量与完成情况（不是 Agent 工具）；
 - 内部滚动部件：就绪等待、滚动域、任务点滚入视口、PDF 解析与慢翻；
 - `scroll_to`：把任务点滚入视口；
-- `scroll_domain`：原子滚动一个 frame 文档；
+- `scroll_domain`：原子滚动一个 frame 文档，支持 domain 组合句柄，兼容 frame_id；
 - `xuexi_health` 诊断工具；
 - 冒烟测试与字体解密单元测试；真实浏览器联调脚本。
 
@@ -38,11 +40,11 @@
 
 ## 当前阶段
 
-P0–P5.7 已实现观察/句柄核心。page_snapshot / task_points 已注册；P5.8 真实页面联调进行中；详见 [开发进度与下一阶段路线](docs/development-roadmap.md)。
+P5 观察/句柄层核心已完成。page_snapshot / task_points 已注册；P5.8 真实页面、异常状态和静态页验证已完成；下一步是 DSH 安装测试。详见 [开发进度与下一阶段路线](docs/development-roadmap.md)。
 
 ## 尚未完成
 
-- `page_snapshot` / `task_points` 已实现；`page_outline` / `element_click` / `page_navigate` / `media_*` 仍在后续阶段；
+- `page_outline` / `element_click` / `page_navigate` / `media_*` 仍在后续阶段；
 - 慢翻文档的 Agent 工具封装（目前只有内部部件）；
 - 截图保底工具（图片题/无法解密时）；
 - 提交、答案复核等业务流程（后续决定）。
@@ -61,6 +63,12 @@ npm run test:live:plain
 npm run test:live:tasks
 npm run test:live:scroll
 npm run test:live:tools
+```
+
+静态页面 fixture 测试（不依赖学习通账号；需要 headless Edge 9333）：
+
+```bash
+npm run test:static
 ```
 
 ## 注意

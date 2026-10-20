@@ -3,6 +3,7 @@ import { waitFor } from '../lib/scroll/readiness.mjs'
 import { computeScrollTop, isAtBottom } from '../lib/scroll/domain.mjs'
 import { isRectVisible } from '../lib/scroll/target.mjs'
 import { clampPacing, nextStepDelta } from '../lib/scroll/document.mjs'
+import { resolveDomainInput } from '../lib/scroll/domain-handle.mjs'
 
 // waitFor succeeds after a few attempts.
 let checks = 0
@@ -42,3 +43,33 @@ assert.equal(isRectVisible({ left: 900, top: 10, width: 100, height: 100 }, { wi
 assert.equal(isRectVisible({ left: 10, top: -200, width: 100, height: 100 }, { width: 800, height: 600 }), false)
 
 console.log('✓ 滚动内部部件单元测试通过')
+
+// Composite domain handle resolution.
+const fakeScrollSession = { generation: 3, frameEpoch: (id) => id === 'frame-b' ? 2 : 1 }
+const legacy = resolveDomainInput({ frame_id: 'frame-a' }, fakeScrollSession)
+assert.deepEqual(legacy, { frame_id: 'frame-a', domain: null, source: 'frame_id' })
+
+const domain = { domain_id: 'd0', frame_id: 'frame-a', frame_epoch: 1, generation: 3, kind: 'document' }
+const resolved = resolveDomainInput({ domain }, fakeScrollSession)
+assert.equal(resolved.source, 'domain')
+assert.equal(resolved.frame_id, 'frame-a')
+assert.equal(resolved.domain.domain_id, 'd0')
+
+assert.throws(
+  () => resolveDomainInput({ frame_id: 'frame-a', domain }, fakeScrollSession),
+  (error) => error.code === 'INVALID_ARGUMENT'
+)
+assert.throws(
+  () => resolveDomainInput({ domain: { ...domain, generation: 2 } }, fakeScrollSession),
+  (error) => error.code === 'STALE_HANDLE' && error.observed.reason === 'generation'
+)
+assert.throws(
+  () => resolveDomainInput({ domain: { ...domain, frame_epoch: 1 } }, { ...fakeScrollSession, frameEpoch: () => 2 }),
+  (error) => error.code === 'STALE_HANDLE' && error.observed.reason === 'frame_epoch'
+)
+assert.throws(
+  () => resolveDomainInput({ domain: { ...domain, kind: 'element' } }, fakeScrollSession),
+  (error) => error.code === 'UNSUPPORTED_DOMAIN'
+)
+
+console.log('✓ 滚动域组合句柄测试通过')

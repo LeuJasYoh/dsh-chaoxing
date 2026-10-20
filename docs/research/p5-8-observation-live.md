@@ -69,7 +69,36 @@
 4. 增加 TAB_UNRESOLVED 的单元测试路径；
 5. 增加 content tabs 无标签/多标签 active 无法判定的边界测试。
 
-## 4. 测试结果
+## 4. 静态页面 fixture 测试
+
+没有更多学习通账号，因此补充了完全静态的页面 fixture，不依赖登录或课程。
+
+文件：
+
+- test/fixtures/static-observe-tabs.html
+- test/fixtures/static-observe-knowledge.html
+- test/fixtures/static-observe-ambiguous.html
+- test/live-static-observe.mjs
+
+静态页覆盖：
+
+- 两个内容标签 + 一个侧栏标签；
+- 侧栏标签不进入 page_snapshot.tabs；
+- knowledge iframe 里两个任务点，wrapper DOM id 重复；
+- 一个普通附件没有任务图标，应被 ignored；
+- about:blank 工具 frame 应进入 hidden_frame_count；
+- #scrollbox 是 element 滚动域；
+- 第二个 fixture 同时有两个 active 标签，page_snapshot.coverage=partial，task_points 返回 TAB_UNRESOLVED。
+
+测试命令（需要 headless Edge 9333）：
+
+~~~bash
+npm run test:static
+~~~
+
+结果：静态页面观察测试通过。
+
+## 5. 测试结果
 
 - npm test 全部通过：8 组测试；
 - 真实页面 page_snapshot / task_points 调用成功；
@@ -77,7 +106,7 @@
 - 跨域 panView 能通过 CDP 读取；
 - 内容标签、无任务标签、全内联页、PDF 页面四类样本通过。
 
-## 5. 异常与加载中验证（2026-10-20 补充）
+## 6. 异常与加载中验证（2026-10-20 补充）
 
 ### TAB_UNRESOLVED 真实路径
 
@@ -119,7 +148,7 @@
 - 加载完成后观察结果会恢复；
 - task_points 只观察当前内容标签。
 
-## 6. 已知限制
+## 7. 已知限制
 
 - TAB_UNRESOLVED 已覆盖，但只在临时异常状态下复现，不是自然页面常态；
 - scroll_domain 仍接收 frame_id，尚未接入 domain 组合句柄；
@@ -127,7 +156,7 @@
 - 内容标签切换仍属 P6，P5 不切换；
 - 尚未安装到真实 DSH，工具列表端到端验证放 P8。
 
-## 7. 结论
+## 8. 结论
 
 P5 的观察工具已经能在真实页面上独立回答：
 

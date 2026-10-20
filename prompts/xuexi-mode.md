@@ -34,6 +34,8 @@
   - 如果返回 TAB_UNRESOLVED，说明当前标签无法判定，先停下重新观察，不要自己猜标签。
 - `scroll_to`：把某个任务点滚到视口内（按 job_id；只滚页面，不翻文档内部）。
 - `scroll_domain`：原子滚动一个 frame 文档；只报告滚动前后位置，不找 PDF、不判断完成。
+  - 优先使用 page_snapshot 返回的 domain 对象；也仍兼容旧的 frame_id；
+  - 只支持 document 域；element 滚动域暂不支持；
   - 滚动工具只负责物理滚动；滚到底不等于任务完成，需要重新观察任务点状态。
 
 ## 当前状态
@@ -41,6 +43,6 @@
 - 已打通：题目读取、页面/标签/frame/任务点观察、任务点分析、基础滚动、PDF panView 映射。
 - page_snapshot / task_points 已注册；它们不会切换标签、点击、播放或提交。
 - 尚未实现：切换标签、目录/大纲、通用元素点击、页面导航、媒体控制。
-- scroll_domain 目前仍接收 frame_id；观察层返回的 domain 组合句柄还没有接入 scroll_domain，暂时不要传 domain 对象。
+- scroll_domain 现在优先接收 page_snapshot 返回的 domain 组合句柄，也保留 frame_id 旧入口；不要把观察结果里的 element 域交给 scroll_domain。
 - 当前内容标签的观察已经可用；切换标签仍是后续阶段。
 - 上下文压缩使用预设作用域里的 `/compact` 命令；上下文过长时可以主动使用。

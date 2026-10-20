@@ -86,10 +86,10 @@
 
 ## 三、已知缺口与设计债
 
-1. 观察/句柄层核心已实现；剩余：domain 组合句柄尚未接入 scroll_domain，TAB_UNRESOLVED 尚未用真实异常页面复现。
+1. 观察/句柄层核心已实现；domain 组合句柄已接入 scroll_domain，TAB_UNRESOLVED 已用真实可逆异常状态和静态 fixture 复现。
 2. 标签层已能观察当前内容标签；切换标签仍属 P6，不在 P5。
 3. 工具契约与当前实现有偏差：
-   - scroll_domain 当前使用 frame_id；
+   - scroll_domain 优先接收 domain 组合句柄，同时保留 frame_id 旧入口；
    - scroll_to 是新工具，不在 v1 契约中；
    - page_questions 是先做竖切。
    
@@ -103,16 +103,17 @@
 
 ## 四、未来开发
 
-### P5 观察/句柄层（进行中）
+### P5 观察/句柄层（核心已完成，待 DSH 安装验证）
 
 - P5.1 观察契约与句柄模型：已定稿，见 docs/design/p5-observation-contract.md
 - P5.2 页面结构调研：全模块内联页 + 三个内容标签页样本已完成，见 docs/research/p5-2-page-structure.md
 - P5.3 任务点清单：已实现，只观察当前内容标签；全内联页和内容标签页均可返回。
 - P5.4 滚动域清单：已实现 document + 真实 element 滚动域（例如 #coursetree）。
 - P5.5 PDF/文档映射：已实现 PDF 任务点 → module frame → panView frame → document domain。
-- P5.6 就绪/截断：已实现基础 coverage / limits / truncated；懒加载和异常页仍待补样本。
+- P5.6 就绪/截断：已实现 coverage / limits / truncated；限速加载中 pending → complete、真实 TAB_UNRESOLVED 和静态 fixture 已验证。
 - P5.7 观察工具封装：已注册 page_snapshot / task_points，共用观察注册表和句柄失效模型。
-- P5.8 联调：已验证全内联页、内容标签有任务、内容标签无任务、PDF 页面、真实 TAB_UNRESOLVED 异常路径、限速加载中 pending/complete；见 docs/research/p5-8-observation-live.md。
+- P5.8 联调：已验证全内联页、内容标签有任务、内容标签无任务、PDF 页面、真实 TAB_UNRESOLVED 异常路径、限速加载中 pending/complete、静态 fixture；见 docs/research/p5-8-observation-live.md。
+- scroll_domain 已支持 page_snapshot 返回的 domain 组合句柄，同时保留 frame_id 兼容。
 
 目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。
 
@@ -171,10 +172,8 @@
 ## 五、下一会话从这里开始
 
 1. 先读本文件；
-2. 做 P5 观察/句柄层设计，不直接继续堆工具；
-3. 观察层稳定后再考虑 P6/P7；
-4. 真实 DSH 安装验证放在 P8，不要在观察层不稳时提前端到端；
-5. 保持只读验证习惯：没有明确授权，不点击答案、不提交、不改变学习进度。
+2. P5 观察/句柄层核心已完成；下一步先做真实 DSH 安装/工具列表验证，再决定是否进入 P6 标签切换；
+3. 保持只读验证习惯：没有明确授权，不点击答案、不提交、不改变学习进度。
 
 ## 六、测试命令
 
@@ -185,6 +184,7 @@ npm run test:live:plain
 npm run test:live:tasks
 npm run test:live:scroll
 npm run test:live:tools
+npm run test:static
 ~~~
 
 ## 七、2026-10-20 代码检查修复记录

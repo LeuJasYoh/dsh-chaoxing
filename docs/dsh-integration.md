@@ -47,7 +47,16 @@ ctx.tools.register({
 })
 ```
 
-当前 `tools/registry.mjs` 只注册 `xuexi_health`，用于验证链路。
+当前 `tools/registry.mjs` 注册：
+
+- `xuexi_health`：链路诊断；
+- `page_questions`：题目读取；
+- `page_snapshot`：页面、内容标签、frame、滚动域观察；
+- `task_points`：当前内容标签任务点、完成状态、PDF 映射；
+- `scroll_to`：任务点滚入视口；
+- `scroll_domain`：document 滚动，支持 domain 组合句柄，兼容 frame_id。
+
+P5 观察层已经可以在真实页面和静态 fixture 上验证。真实 DSH 安装/预设激活/工具列表验证仍未执行，作为下一步安装测试。
 
 ## 4. 上下文压缩 / `/compact`
 

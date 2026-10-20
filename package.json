@@ -28,7 +28,8 @@
     "test:live:plain": "node test/live-plain.mjs",
     "test:live:tasks": "node test/live-tasks.mjs",
     "test:live:scroll": "node test/live-scroll.mjs",
-    "test:live:tools": "node test/live-tools.mjs"
+    "test:live:tools": "node test/live-tools.mjs",
+    "test:static": "node test/live-static-observe.mjs"
   },
   "engines": {
     "node": ">=20"

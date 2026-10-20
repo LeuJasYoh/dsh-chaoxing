@@ -1,0 +1,28 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>static observe ambiguous tabs</title>
+<style>
+  body { margin: 0; font-family: sans-serif; }
+  #scrollbox { width: 200px; height: 100px; overflow-y: auto; border: 1px solid #999; }
+  #scrollbox-content { height: 500px; background: linear-gradient(#fff, #ddd); }
+</style></head>
+<body>
+  <div id="prev_tab" class="prev_list">
+    <ul class="prev_ul clearfix">
+      <li id="dct1" class="active" title="视频" cardid="1" role="option">
+        <div class="prev_white"><span class="num">1</span><span class="spanText">视频</span></div>
+      </li>
+      <li id="dct2" class="active" title="章节测验" cardid="2" role="option">
+        <div class="prev_white"><span class="num">2</span><span class="spanText">章节测验</span></div>
+      </li>
+    </ul>
+  </div>
+  <div class="tabCatalog">
+    <ul>
+      <li id="tit1" class="active">目录</li>
+      <li id="tit2">讨论</li>
+    </ul>
+  </div>
+  <div id="scrollbox"><div id="scrollbox-content">scrollable content</div></div>
+  <iframe id="knowledge" name="knowledge" src="./static-observe-knowledge.html"></iframe>
+  <iframe name="blank-utility" src="about:blank"></iframe>
+</body></html>

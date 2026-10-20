@@ -70,6 +70,7 @@ assert.equal(scrollTo.parameters.properties.job_id.type, 'string')
 assert.equal(scrollTo.parameters.properties.align.enum.includes('start'), true)
 assert.ok(scrollTo.output.render({}, { ok: true, tool: 'scroll_to', data: { visible: true } })[0].text.includes('scroll_to'))
 assert.equal(scrollDomain.parameters.properties.frame_id.type, 'string')
+assert.equal(scrollDomain.parameters.properties.domain.type, 'object')
 assert.equal(scrollDomain.parameters.properties.to.enum.includes('bottom'), true)
 assert.ok(scrollDomain.output.render({}, { ok: true, tool: 'scroll_domain', data: { at_bottom: true } })[0].text.includes('scroll_domain'))
 
