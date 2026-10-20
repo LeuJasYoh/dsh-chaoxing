@@ -98,7 +98,8 @@ function Set-ObjectProperty {
 
 function Resolve-DshProfile {
     param(
-        [string]$ExplicitPath
+        [string]$ExplicitPath,
+        [bool]$AllowPrompt = $false
     )
 
     $candidates = New-Object System.Collections.ArrayList
@@ -111,6 +112,16 @@ function Resolve-DshProfile {
     if (-not [string]::IsNullOrWhiteSpace($env:DSH_HOME)) {
         [void]$candidates.Add((Join-Path $env:DSH_HOME 'profiles\desktop'))
     }
+    if (-not [string]::IsNullOrWhiteSpace($env:USERPROFILE)) {
+        [void]$candidates.Add((Join-Path $env:USERPROFILE '.dsh\profiles\desktop'))
+        $profilesRoot = Join-Path $env:USERPROFILE '.dsh\profiles'
+        if (Test-Path -LiteralPath $profilesRoot) {
+            $profileDirs = @(Get-ChildItem -LiteralPath $profilesRoot -Directory -ErrorAction SilentlyContinue)
+            foreach ($dir in $profileDirs) {
+                [void]$candidates.Add($dir.FullName)
+            }
+        }
+    }
 
     foreach ($candidate in $candidates) {
         try {
@@ -122,7 +133,23 @@ function Resolve-DshProfile {
             return $resolved
         }
     }
-    throw '找不到 DSH profile。请用 -ProfileDir 指定 profile 目录，或设置 DSH_PROFILE_DIR。'
+
+    if ($AllowPrompt) {
+        Write-Warn '没有自动找到 DSH profile。'
+        Write-Host '通常位置类似：C:\Users\<用户名>\.dsh\profiles\desktop' -ForegroundColor Yellow
+        $entered = Read-Host '请输入 DSH profile 目录'
+        if (-not [string]::IsNullOrWhiteSpace($entered)) {
+            try {
+                $resolved = [System.IO.Path]::GetFullPath($entered.Trim())
+            } catch {
+                throw '输入的路径无效。'
+            }
+            if (Test-Path -LiteralPath (Join-Path $resolved 'package.json')) {
+                return $resolved
+            }
+        }
+    }
+    throw '找不到 DSH profile。请确认 DSH 已安装，或用 -ProfileDir 指定 profile 目录。'
 }
 
 function Resolve-PluginRoot {
@@ -475,7 +502,7 @@ try {
         Fail "插件名称应为 $expectedName，实际为 $([string]$pluginPackage.name)。"
     }
 
-    $dshProfile = Resolve-DshProfile -ExplicitPath $ProfileDir
+    $dshProfile = Resolve-DshProfile -ExplicitPath $ProfileDir -AllowPrompt:($Action -eq 'Menu')
     $profilePackagePath = Join-Path $dshProfile 'package.json'
     $profilePackage = Read-Json -Path $profilePackagePath
 
