@@ -116,7 +116,7 @@
 - P5.9 工作区页面笔记：.notes 存储、revision、stale、未观察标签占位；见 docs/design/page-notes.md。
 - P5.10 page_notes：get/list/capture/patch，自动 capture 观察事实。
 - P5.11 task_point_check：复用任务点部件，默认最多等 3 秒，不刷新页面。
-- P5.12 笔记/复核联调：静态测试 + 真实页面模拟环境通过；尚未在重新安装后的 DSH 会话中验证。
+- P5.12 笔记/复核联调：已在重新安装后的真实 DSH 0.2.0 会话中验证；.notes 文件、plan patch、任务点复核均通过。
 - scroll_domain 已支持 page_snapshot 返回的 domain 组合句柄，同时保留 frame_id 兼容。
 
 目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。

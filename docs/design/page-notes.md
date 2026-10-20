@@ -109,7 +109,7 @@ join(workspaceRoot, '.notes', noteId + '.json')
 
 ## 7. 验证
 
-已通过：
+真实 DSH 0.2.0 会话已通过：
 
 - 笔记存储/增量编辑单元测试；
 - 真实页面 page_snapshot → page_notes → task_point_check 联调；

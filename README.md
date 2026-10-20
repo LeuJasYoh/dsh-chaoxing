@@ -38,6 +38,7 @@
 - [PDF 慢翻完成验证](docs/research/pdf-scroll-completion.md)（含两次真实未完成 PDF 验证）
 - [P5.2 页面结构调研](docs/research/p5-2-page-structure.md)
 - [P5.8 观察工具真实页面联调](docs/research/p5-8-observation-live.md)
+- [P8 真实 DSH 安装、笔记与任务点复核验证](docs/research/p8-dsh-install-validation.md)
 - [超星章节 DOM 与滚动观察](docs/research/chaoxing-chapter-dom.md)
 - [DSH 集成说明](docs/dsh-integration.md)
 
