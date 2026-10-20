@@ -1,6 +1,6 @@
 {
   "name": "dsh-xuexi-next",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "DSH 网课模式重写版：先把手和眼还给模型，再做可选的业务流程",
   "type": "module",
   "license": "MIT",
@@ -24,7 +24,7 @@
     "install.ps1"
   ],
   "scripts": {
-    "test": "node test/smoke.mjs && node test/cxsecret.test.mjs && node test/tasks.test.mjs && node test/scroll.test.mjs && node test/questions.test.mjs && node test/observe.test.mjs",
+    "test": "node test/smoke.mjs && node test/cxsecret.test.mjs && node test/tasks.test.mjs && node test/scroll.test.mjs && node test/questions.test.mjs && node test/observe.test.mjs && node test/notes.test.mjs",
     "test:live": "node test/live-questions.mjs",
     "test:live:plain": "node test/live-plain.mjs",
     "test:live:tasks": "node test/live-tasks.mjs",
@@ -45,7 +45,7 @@
   "dsh": {
     "id": "dsh-xuexi-next",
     "name": "网课模式（重写）",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "engines": {
       "dsh": ">=0.2.0"
     },

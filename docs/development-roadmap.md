@@ -113,6 +113,10 @@
 - P5.6 就绪/截断：已实现 coverage / limits / truncated；限速加载中 pending → complete、真实 TAB_UNRESOLVED 和静态 fixture 已验证。
 - P5.7 观察工具封装：已注册 page_snapshot / task_points，共用观察注册表和句柄失效模型。
 - P5.8 联调：已验证全内联页、内容标签有任务、内容标签无任务、PDF 页面、真实 TAB_UNRESOLVED 异常路径、限速加载中 pending/complete、静态 fixture；见 docs/research/p5-8-observation-live.md。
+- P5.9 工作区页面笔记：.notes 存储、revision、stale、未观察标签占位；见 docs/design/page-notes.md。
+- P5.10 page_notes：get/list/capture/patch，自动 capture 观察事实。
+- P5.11 task_point_check：复用任务点部件，默认最多等 3 秒，不刷新页面。
+- P5.12 笔记/复核联调：静态测试 + 真实页面模拟环境通过；尚未在重新安装后的 DSH 会话中验证。
 - scroll_domain 已支持 page_snapshot 返回的 domain 组合句柄，同时保留 frame_id 兼容。
 
 目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。

@@ -1,6 +1,7 @@
 import { collectPageSnapshot } from '../lib/observe/page.mjs'
+import { captureSnapshotToNotes } from '../lib/notes/capture.mjs'
 
-export function registerPageSnapshot(ctx, { output, toLossless, session, registry }) {
+export function registerPageSnapshot(ctx, { output, toLossless, session, registry, notes }) {
   ctx.tools.register({
     name: 'page_snapshot',
     description: [
@@ -16,13 +17,16 @@ export function registerPageSnapshot(ctx, { output, toLossless, session, registr
       properties: {},
     },
     output,
-    async execute() {
+    async execute(args = {}, exec = {}) {
       try {
         const snapshot = await collectPageSnapshot(session, registry)
+        const captured = await captureSnapshotToNotes(notes, exec, snapshot)
+        const note = captured ? { note_id: captured.note_id || null, revision: captured.revision || null, note_file: captured.file ? String(captured.file).replace(/\\/g, '/').split('/.notes/').pop() : null, error: captured.error || null } : null
         return toLossless({
           ok: true,
           tool: 'page_snapshot',
           ...snapshot,
+          note,
           error: null,
         })
       } catch (error) {

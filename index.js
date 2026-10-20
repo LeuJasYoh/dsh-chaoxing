@@ -5,7 +5,7 @@ export const name = 'dsh-xuexi-next'
 
 // 只声明会以属性访问方式使用的服务。
 // systemPrompt / sessions / attachments 等一律用 ctx.get?.() 可选获取。
-export const inject = ['tools']
+export const inject = ['tools', 'workingDirectory']
 
 const VERSION = (() => {
   try {

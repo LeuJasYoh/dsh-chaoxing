@@ -27,11 +27,18 @@
   - 它只负责“页面结构”，不判断任务完成；
   - 内容标签只指“视频 / 章节测验 / 文档”这类内容标签，不包含右侧“目录 / 讨论 / 笔记 / 标注”侧栏标签；
   - 输出里的 frame_id / domain_id 是后续工具使用的句柄；页面刷新或 frame 导航后旧句柄会失效。
+- `page_notes`：读写工作区 `.notes/` 下的结构化页面笔记。
+  - `get`：读当前笔记；`patch`：在 expected_revision 下写计划、标签备注、任务备注/intent/needs_recheck；`capture`：保存最近一次观察；`list`：列出笔记。
+  - 笔记是工作记忆，不是页面真相；任务完成状态只能由观察或 task_point_check 更新。
+  - 笔记文件直接放在工作区 `.notes/`，用课程/章节 ID 命名，不包含插件名，也不写入 enc/token 等敏感 URL。
 - `task_points`：只读观察当前内容标签里的任务点、完成状态、模块 frame 和 PDF 映射。
   - 可以单独调用，不需要先调用 page_snapshot；
   - 只观察当前内容标签，不切换标签；当前标签没有任务点是合法结果；
   - 返回 job_id、kind、title、state、signals、frame_id、wrapper_element、documents；
   - 如果返回 TAB_UNRESOLVED，说明当前标签无法判定，先停下重新观察，不要自己猜标签。
+- `task_point_check`：重新观察指定 job_id 的任务点，默认最多等 3 秒；只读，不刷新页面、不点击、不提交。
+  - 任务点不在当前标签时返回 TASK_POINT_NOT_FOUND，不要猜。
+  - 它只报告观察到的状态；返回 incomplete 不等于失败，返回 completed 才是有证据的完成。
 - `scroll_to`：把某个任务点滚到视口内（按 job_id；只滚页面，不翻文档内部）。
 - `scroll_domain`：原子滚动一个 frame 文档；只报告滚动前后位置，不找 PDF、不判断完成。
   - 优先使用 page_snapshot 返回的 domain 对象；也仍兼容旧的 frame_id；
@@ -40,9 +47,10 @@
 
 ## 当前状态
 
-- 已打通：题目读取、页面/标签/frame/任务点观察、任务点分析、基础滚动、PDF panView 映射。
-- page_snapshot / task_points 已注册；它们不会切换标签、点击、播放或提交。
+- 已打通：题目读取、页面/标签/frame/任务点观察、工作区页面笔记、指定任务点复核、基础滚动、PDF panView 映射。
+- page_snapshot / task_points / page_notes / task_point_check 已注册；它们不会切换标签、点击、播放或提交。
 - 尚未实现：切换标签、目录/大纲、通用元素点击、页面导航、媒体控制。
 - scroll_domain 现在优先接收 page_snapshot 返回的 domain 组合句柄，也保留 frame_id 旧入口；不要把观察结果里的 element 域交给 scroll_domain。
 - 当前内容标签的观察已经可用；切换标签仍是后续阶段。
+- 页面观察会自动把事实写入工作区 `.notes/`；模型用 page_notes 写计划和备注，不要直接写任务完成状态。
 - 上下文压缩使用预设作用域里的 `/compact` 命令；上下文过长时可以主动使用。

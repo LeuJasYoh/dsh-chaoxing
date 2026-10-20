@@ -1,6 +1,7 @@
 import { collectTaskPoints } from '../lib/observe/tasks.mjs'
+import { captureTasksToNotes } from '../lib/notes/capture.mjs'
 
-export function registerTaskPoints(ctx, { output, toLossless, session, registry }) {
+export function registerTaskPoints(ctx, { output, toLossless, session, registry, notes }) {
   ctx.tools.register({
     name: 'task_points',
     description: [
@@ -16,13 +17,16 @@ export function registerTaskPoints(ctx, { output, toLossless, session, registry 
       properties: {},
     },
     output,
-    async execute() {
+    async execute(args = {}, exec = {}) {
       try {
         const result = await collectTaskPoints(session, registry)
+        const captured = await captureTasksToNotes(notes, exec, result)
+        const note = captured ? { note_id: captured.note_id || null, revision: captured.revision || null, note_file: captured.file ? String(captured.file).replace(/\\/g, '/').split('/.notes/').pop() : null, error: captured.error || null } : null
         return toLossless({
           ok: true,
           tool: 'task_points',
           ...result,
+          note,
           error: null,
         })
       } catch (error) {

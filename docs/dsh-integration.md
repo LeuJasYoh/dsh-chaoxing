@@ -53,6 +53,8 @@ ctx.tools.register({
 - `page_questions`：题目读取；
 - `page_snapshot`：页面、内容标签、frame、滚动域观察；
 - `task_points`：当前内容标签任务点、完成状态、PDF 映射；
+- `page_notes`：工作区 `.notes/` 结构化页面笔记；
+- `task_point_check`：不刷新页面复核指定任务点；
 - `scroll_to`：任务点滚入视口；
 - `scroll_domain`：document 滚动，支持 domain 组合句柄，兼容 frame_id。
 
