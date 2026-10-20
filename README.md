@@ -31,6 +31,7 @@
 - [开发进度与下一阶段路线](docs/development-roadmap.md)
 - [学习通题目页与字体加密观察](docs/research/quiz-encryption-observations.md)
 - [PDF 慢翻完成验证](docs/research/pdf-scroll-completion.md)（含两次真实未完成 PDF 验证）
+- [P5.2 页面结构调研](docs/research/p5-2-page-structure.md)
 - [超星章节 DOM 与滚动观察](docs/research/chaoxing-chapter-dom.md)
 - [DSH 集成说明](docs/dsh-integration.md)
 

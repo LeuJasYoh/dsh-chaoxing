@@ -347,7 +347,21 @@ P5.1 的产出是契约，不是功能。验收方式：
 - page_snapshot 与 task_points 的职责边界清楚；
 - task_points 独立调用和先 snapshot 后 tasks 两种路径都有明确语义。
 
-## 12. 交给 P5.2 的研究问题
+## 12. P5.2 调研补充（2026-10-20）
+
+已用真实全模块内联页确认：
+
+- tabs 只表示内容/模块标签；右侧 .tabs/.tabCatalog 是侧栏标签，不是内容标签；
+- 没有内容标签时，tabs.items 为空，task_points 分析全部内联模块；
+- frame 输出默认过滤 about:blank / javascript / 工具 frame，并记录 hidden_frame_count；
+- frame_id 与 iframe 元素可通过 DOM.getFrameOwner + DOM.describeNode 映射；
+- 任务点身份使用 jobid/objectid，不使用重复 DOM id/name；
+- element 滚动域需要纳入（例如 #coursetree）；
+- PDF 域在跨域 panView frame 的 document 上。
+
+仍需一个带内容标签、只加载当前标签的页面样本，验证内容标签 active 判定和未加载标签 coverage。
+
+## 13. 交给 P5.2 的研究问题
 
 P5.2 需要真实页面结构信息：
 
