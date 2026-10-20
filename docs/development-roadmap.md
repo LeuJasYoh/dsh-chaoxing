@@ -178,3 +178,26 @@ npm run test:live:tasks
 npm run test:live:scroll
 npm run test:live:tools
 ~~~
+
+## 七、2026-10-20 代码检查修复记录
+
+本轮只做代码检查和修复，没有开始 P5。
+
+已修复：
+
+- CDP 会话增加 ready 状态，避免“WebSocket 已开但 Page/Runtime 未初始化”时误判已连接；
+- 旧连接的 close/error 事件增加实例守卫，避免重连后旧事件把新连接清空；
+- WebSocket open 超时/失败时关闭连接，避免悬挂连接；
+- CDP send 同步抛错时清理 pending 和 timer；
+- 滚动稳定性等待允许显式 timeout=0；
+- 跨 frame 测量视口时对 top window 访问做防御；
+- 多选答案支持紧凑格式，例如 ABC；
+- 移除 document.mjs 未使用 import；
+- 新增题目解析辅助逻辑测试（selectedLabels / normalizeType）。
+
+验证：
+
+- 25 个 JS/MJS 文件 node --check 通过；
+- npm test 五组通过：
+  smoke / cxsecret / tasks / scroll / questions。
+
