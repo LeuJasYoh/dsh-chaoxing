@@ -20,7 +20,8 @@
     "lib",
     "docs",
     "locale/*.json",
-    "icon.svg"
+    "icon.svg",
+    "scripts"
   ],
   "scripts": {
     "test": "node test/smoke.mjs && node test/cxsecret.test.mjs && node test/tasks.test.mjs && node test/scroll.test.mjs && node test/questions.test.mjs && node test/observe.test.mjs",

@@ -58,7 +58,22 @@ ctx.tools.register({
 
 P5 观察层已经可以在真实页面和静态 fixture 上验证。真实 DSH 安装/预设激活/工具列表验证仍未执行，作为下一步安装测试。
 
-## 4. 上下文压缩 / `/compact`
+## 4. 安装脚本
+
+仓库提供：
+
+~~~text
+scripts/install-dsh-plugin.ps1
+~~~
+
+- 兼容 Windows PowerShell 5.1 与 PowerShell 7；
+- UTF-8 BOM，中文显示正常；
+- 默认 `-Action Status`；
+- `-Action Install -DryRun` 只预览；
+- 实际安装会备份 profile 的 `package.json` / `pnpm-lock.yaml`，把插件写入 `dependencies` 和 `dsh.profile.bundles`，再运行 `pnpm install`；
+- 安装前要求关闭 DeepSeek Harness。
+
+## 5. 上下文压缩 / `/compact`
 
 在预设的 `plugins` 中挂一个 `cordis:group`：
 
@@ -86,7 +101,7 @@ P5 观察层已经可以在真实页面和静态 fixture 上验证。真实 DSH 
 
 `command-compact` 在预设作用域中注册 `/compact`；`compaction-basic` 负责自动压缩。
 
-## 5. 参考
+## 6. 参考
 
 - 归档旧代码：`D:\Projects\XueXi\archive\dsh-xuexi-2.3.2`
 - 其中 `cordis.patch.yml` / `index.js` 头注释记录了 DSH 集成踩坑。
