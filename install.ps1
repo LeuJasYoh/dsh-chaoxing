@@ -5,19 +5,19 @@
 
 .DESCRIPTION
   兼容 Windows PowerShell 5.1 与 PowerShell 7。
-  默认只检查状态；安装和卸载必须显式指定 -Action。
+  直接运行会显示中文交互菜单：安装、预览安装、卸载、查看状态。
   安装前会备份 profile 的 package.json 和 pnpm-lock.yaml，并默认要求
   DeepSeek Harness 已关闭。
 
 .EXAMPLE
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dsh-plugin.ps1 -Action Status
-  powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dsh-plugin.ps1 -Action Install -DryRun
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+  powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Action Install -DryRun
 #>
 
 [CmdletBinding()]
 param(
-    [ValidateSet('Status', 'Install', 'Uninstall')]
-    [string]$Action = 'Status',
+    [ValidateSet('Menu', 'Status', 'Install', 'Uninstall')]
+    [string]$Action = 'Menu',
 
     [string]$PluginPath = '',
 
@@ -133,7 +133,7 @@ function Resolve-PluginRoot {
     if (-not [string]::IsNullOrWhiteSpace($ExplicitPath)) {
         $candidate = $ExplicitPath
     } else {
-        $candidate = Split-Path -Parent $PSScriptRoot
+        $candidate = $PSScriptRoot
     }
     try {
         return [System.IO.Path]::GetFullPath($candidate)
@@ -372,6 +372,94 @@ function Uninstall-Plugin {
     }
 }
 
+
+
+function Confirm-Action {
+    param([string]$Message)
+    $answer = Read-Host "$Message [y/N]"
+    return ($answer -match '^(y|yes|Y|YES|是)$')
+}
+
+function Invoke-InteractiveMenu {
+    param(
+        [string]$PluginRoot,
+        [string]$DshProfile,
+        [object]$PluginPackage
+    )
+
+    while ($true) {
+        Write-Host ''
+        Write-Host '========================================' -ForegroundColor DarkCyan
+        Write-Host '       dsh-xuexi-next 插件安装器' -ForegroundColor Cyan
+        Write-Host '========================================' -ForegroundColor DarkCyan
+        Write-Host '1. 安装插件'
+        Write-Host '2. 预览安装（不会修改任何文件）'
+        Write-Host '3. 卸载插件'
+        Write-Host '4. 查看安装状态'
+        Write-Host '0. 退出'
+        Write-Host ''
+        $choice = Read-Host '请输入编号'
+        switch ($choice) {
+            '1' {
+                if (-not (Confirm-Action '确认现在安装 dsh-xuexi-next 吗？安装前请关闭 DeepSeek Harness。')) {
+                    Write-Info '已取消。'
+                    continue
+                }
+                try {
+                    $pnpmCommand = Get-PnpmCommand
+                    $profilePackage = Read-Json -Path (Join-Path $DshProfile 'package.json')
+                    Install-Plugin -PluginRoot $PluginRoot -DshProfile $DshProfile -PluginPackage $PluginPackage -ProfilePackage $profilePackage -PnpmCommand $pnpmCommand -Preview:$false
+                } catch {
+                    Write-Warn $_.Exception.Message
+                }
+                Write-Host ''
+                [void](Read-Host '按回车返回菜单')
+            }
+            '2' {
+                try {
+                    $profilePackage = Read-Json -Path (Join-Path $DshProfile 'package.json')
+                    Install-Plugin -PluginRoot $PluginRoot -DshProfile $DshProfile -PluginPackage $PluginPackage -ProfilePackage $profilePackage -PnpmCommand '' -Preview:$true
+                } catch {
+                    Write-Warn $_.Exception.Message
+                }
+                Write-Host ''
+                [void](Read-Host '按回车返回菜单')
+            }
+            '3' {
+                if (-not (Confirm-Action '确认卸载 dsh-xuexi-next 吗？卸载前请关闭 DeepSeek Harness。')) {
+                    Write-Info '已取消。'
+                    continue
+                }
+                try {
+                    $pnpmCommand = Get-PnpmCommand
+                    Uninstall-Plugin -DshProfile $DshProfile -PluginName ([string]$PluginPackage.name) -PnpmCommand $pnpmCommand -Preview:$false
+                } catch {
+                    Write-Warn $_.Exception.Message
+                }
+                Write-Host ''
+                [void](Read-Host '按回车返回菜单')
+            }
+            '4' {
+                try {
+                    $profilePackage = Read-Json -Path (Join-Path $DshProfile 'package.json')
+                    Show-Status -PluginRoot $PluginRoot -DshProfile $DshProfile -PluginPackage $PluginPackage -ProfilePackage $profilePackage
+                } catch {
+                    Write-Warn $_.Exception.Message
+                }
+                Write-Host ''
+                [void](Read-Host '按回车返回菜单')
+            }
+            '0' {
+                Write-Info '已退出。'
+                return
+            }
+            default {
+                Write-Warn '请输入 0 到 4 之间的编号。'
+            }
+        }
+    }
+}
+
 try {
     $pluginRoot = Resolve-PluginRoot -ExplicitPath $PluginPath
     $pluginPackagePath = Join-Path $pluginRoot 'package.json'
@@ -390,6 +478,11 @@ try {
     $dshProfile = Resolve-DshProfile -ExplicitPath $ProfileDir
     $profilePackagePath = Join-Path $dshProfile 'package.json'
     $profilePackage = Read-Json -Path $profilePackagePath
+
+    if ($Action -eq 'Menu') {
+        Invoke-InteractiveMenu -PluginRoot $pluginRoot -DshProfile $dshProfile -PluginPackage $pluginPackage
+        exit 0
+    }
 
     Write-Info "脚本动作：$Action"
     if ($Action -eq 'Status') {

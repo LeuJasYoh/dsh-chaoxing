@@ -63,13 +63,13 @@ P5 观察层已经可以在真实页面和静态 fixture 上验证。真实 DSH 
 仓库提供：
 
 ~~~text
-scripts/install-dsh-plugin.ps1
+install.ps1
 ~~~
 
 - 兼容 Windows PowerShell 5.1 与 PowerShell 7；
 - UTF-8 BOM，中文显示正常；
-- 默认 `-Action Status`；
-- `-Action Install -DryRun` 只预览；
+- 直接运行显示中文交互菜单：安装 / 预览安装 / 卸载 / 查看状态；
+- `-Action Install -DryRun` 等命令行参数属于高级预留接口；
 - 实际安装会备份 profile 的 `package.json` / `pnpm-lock.yaml`，把插件写入 `dependencies` 和 `dsh.profile.bundles`，再运行 `pnpm install`；
 - 安装前要求关闭 DeepSeek Harness。
 

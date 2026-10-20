@@ -51,33 +51,23 @@ P5 观察/句柄层核心已完成。page_snapshot / task_points 已注册；P5.
 
 ## 安装到 DSH
 
-安装脚本：
+插件根目录运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+会显示中文菜单：
 
 ```text
-scripts/install-dsh-plugin.ps1
+1. 安装插件
+2. 预览安装（不会修改任何文件）
+3. 卸载插件
+4. 查看安装状态
+0. 退出
 ```
 
-兼容 Windows PowerShell 5.1 和 PowerShell 7，脚本文件使用 UTF-8 BOM，中文输出正常。
-
-先检查状态：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dsh-plugin.ps1 -Action Status
-```
-
-预览安装：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dsh-plugin.ps1 -Action Install -DryRun
-```
-
-实际安装前需要关闭 DeepSeek Harness，然后运行：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dsh-plugin.ps1 -Action Install
-```
-
-脚本会：
+实际安装前需要关闭 DeepSeek Harness；脚本会：
 
 - 定位 DSH profile；
 - 备份 profile 的 package.json 和 pnpm-lock.yaml；
@@ -85,10 +75,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dsh-plugin
 - 运行 pnpm install；
 - 失败时恢复 profile 配置文件。
 
-卸载：
+命令行参数属于预留的高级接口，日常使用不需要：
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-dsh-plugin.ps1 -Action Uninstall
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -Action Install -DryRun
 ```
 
 ## 验证
