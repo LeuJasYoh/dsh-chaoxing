@@ -27,6 +27,7 @@
 - [page_questions 设计](docs/design/page-questions.md)
 - [任务点分析内部小部件设计](docs/design/task-point-analysis-components.md)
 - [通用滚动部件与工具设计](docs/design/scroll-components.md)
+- [P5.1 观察契约与句柄模型](docs/design/p5-observation-contract.md)
 - [开发进度与下一阶段路线](docs/development-roadmap.md)
 - [学习通题目页与字体加密观察](docs/research/quiz-encryption-observations.md)
 - [PDF 慢翻完成验证](docs/research/pdf-scroll-completion.md)（含两次真实未完成 PDF 验证）
