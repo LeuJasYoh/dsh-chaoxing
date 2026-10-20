@@ -25,7 +25,9 @@ param(
 
     [switch]$DryRun,
 
-    [switch]$Force
+    [switch]$Force,
+
+    [switch]$TrustLockfile
 )
 
 Set-StrictMode -Version 2.0
@@ -244,6 +246,34 @@ function Show-Status {
     }
 }
 
+function Invoke-PnpmInstall {
+    param(
+        [string]$PnpmCommand,
+        [string]$DshProfile,
+        [bool]$UseTrustLockfile
+    )
+
+    Push-Location $DshProfile
+    try {
+        $arguments = @('install')
+        if ($UseTrustLockfile) {
+            Write-Warn '本次 pnpm install 使用 --trust-lockfile 重试。'
+            $arguments += '--trust-lockfile'
+        }
+        $output = & $PnpmCommand @arguments 2>&1
+        $exitCode = $LASTEXITCODE
+        foreach ($line in $output) {
+            Write-Host ([string]$line)
+        }
+        return [pscustomobject]@{
+            exit_code = $exitCode
+            output = ($output -join [Environment]::NewLine)
+        }
+    } finally {
+        Pop-Location
+    }
+}
+
 function Install-Plugin {
     param(
         [string]$PluginRoot,
@@ -251,7 +281,9 @@ function Install-Plugin {
         [object]$PluginPackage,
         [object]$ProfilePackage,
         [string]$PnpmCommand,
-        [bool]$Preview
+        [bool]$Preview,
+        [bool]$PromptForTrustLockfile = $false,
+        [bool]$UseTrustLockfile = $false
     )
 
     $pluginName = [string]$PluginPackage.name
@@ -321,14 +353,23 @@ function Install-Plugin {
         Write-Info '已更新 profile package.json。'
 
         Write-Info '正在运行 pnpm install ...'
-        Push-Location $DshProfile
-        try {
-            & $PnpmCommand install
-            if ($LASTEXITCODE -ne 0) {
-                throw "pnpm install 返回退出码 $LASTEXITCODE"
+        $installResult = Invoke-PnpmInstall -PnpmCommand $PnpmCommand -DshProfile $DshProfile -UseTrustLockfile:$UseTrustLockfile
+        if ($installResult.exit_code -ne 0) {
+            $policyBlocked = $installResult.output -match 'ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION|supply-chain policy'
+            if ($policyBlocked -and -not $UseTrustLockfile) {
+                Write-Warn 'pnpm 的供应链检查拦截了 profile 里已有依赖（不是本插件本身）。'
+                Write-Warn '可以只对这次安装使用 --trust-lockfile 跳过重复校验，不会删除 lockfile。'
+                $retry = $false
+                if ($PromptForTrustLockfile) {
+                    $retry = Confirm-Action '是否使用 --trust-lockfile 重试本次安装？'
+                }
+                if ($retry) {
+                    $installResult = Invoke-PnpmInstall -PnpmCommand $PnpmCommand -DshProfile $DshProfile -UseTrustLockfile:$true
+                }
             }
-        } finally {
-            Pop-Location
+            if ($installResult.exit_code -ne 0) {
+                throw "pnpm install 返回退出码 $($installResult.exit_code)"
+            }
         }
 
         $installedPackage = Join-Path (Join-Path (Join-Path $DshProfile 'node_modules') $pluginName) 'package.json'
@@ -435,7 +476,7 @@ function Invoke-InteractiveMenu {
                 try {
                     $pnpmCommand = Get-PnpmCommand
                     $profilePackage = Read-Json -Path (Join-Path $DshProfile 'package.json')
-                    Install-Plugin -PluginRoot $PluginRoot -DshProfile $DshProfile -PluginPackage $PluginPackage -ProfilePackage $profilePackage -PnpmCommand $pnpmCommand -Preview:$false
+                    Install-Plugin -PluginRoot $PluginRoot -DshProfile $DshProfile -PluginPackage $PluginPackage -ProfilePackage $profilePackage -PnpmCommand $pnpmCommand -Preview:$false -PromptForTrustLockfile $true
                 } catch {
                     Write-Warn $_.Exception.Message
                 }
@@ -521,7 +562,7 @@ try {
     Write-Info "pnpm：$pnpmCommand"
 
     if ($Action -eq 'Install') {
-        Install-Plugin -PluginRoot $pluginRoot -DshProfile $dshProfile -PluginPackage $pluginPackage -ProfilePackage $profilePackage -PnpmCommand $pnpmCommand -Preview:$DryRun
+        Install-Plugin -PluginRoot $pluginRoot -DshProfile $dshProfile -PluginPackage $pluginPackage -ProfilePackage $profilePackage -PnpmCommand $pnpmCommand -Preview:$DryRun -UseTrustLockfile:$TrustLockfile
         exit 0
     }
 

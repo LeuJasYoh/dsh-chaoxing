@@ -73,7 +73,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 - 备份 profile 的 package.json 和 pnpm-lock.yaml；
 - 把本插件加入 profile 的依赖和 bundle 列表；
 - 运行 pnpm install；
-- 失败时恢复 profile 配置文件。
+- 失败时恢复 profile 配置文件；
+- 如果 pnpm 的供应链检查拦截了 profile 里已有依赖，会询问是否仅本次使用 `--trust-lockfile` 重试，不会删除 lockfile。
 
 命令行参数属于预留的高级接口，日常使用不需要：
 

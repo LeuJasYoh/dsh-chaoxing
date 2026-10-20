@@ -71,7 +71,8 @@ install.ps1
 - 直接运行显示中文交互菜单：安装 / 预览安装 / 卸载 / 查看状态；
 - `-Action Install -DryRun` 等命令行参数属于高级预留接口；
 - 实际安装会备份 profile 的 `package.json` / `pnpm-lock.yaml`，把插件写入 `dependencies` 和 `dsh.profile.bundles`，再运行 `pnpm install`；
-- 安装前要求关闭 DeepSeek Harness。
+- 安装前要求关闭 DeepSeek Harness；
+- 如果 pnpm 供应链检查拦截 profile 已有依赖，菜单会询问是否仅本次使用 `--trust-lockfile` 重试，不删除 lockfile。
 
 ## 5. 上下文压缩 / `/compact`
 
