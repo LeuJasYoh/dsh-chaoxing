@@ -2,7 +2,7 @@
 
 更新时间：2026-10-20
 当前版本：0.1.0
-当前阶段：P0–P5.7 已实现观察/句柄核心，P5.8 真实页面联调部分完成。
+当前阶段：P0–P5.7 已实现观察/句柄核心，P5.8 真实页面联调已完成（DSH 安装验证待后续）。
 
 ## 一、当前已经完成
 
@@ -112,7 +112,7 @@
 - P5.5 PDF/文档映射：已实现 PDF 任务点 → module frame → panView frame → document domain。
 - P5.6 就绪/截断：已实现基础 coverage / limits / truncated；懒加载和异常页仍待补样本。
 - P5.7 观察工具封装：已注册 page_snapshot / task_points，共用观察注册表和句柄失效模型。
-- P5.8 联调：已在 9222/9223 真实页面验证全内联页、内容标签有任务、内容标签无任务、PDF 页面；见 docs/research/p5-8-observation-live.md。TAB_UNRESOLVED 和更多懒加载页面仍待补。
+- P5.8 联调：已验证全内联页、内容标签有任务、内容标签无任务、PDF 页面、真实 TAB_UNRESOLVED 异常路径、限速加载中 pending/complete；见 docs/research/p5-8-observation-live.md。
 
 目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。
 

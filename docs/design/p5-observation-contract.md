@@ -394,6 +394,6 @@ P5.2 需要真实页面结构信息：
 尚未完成：
 
 - scroll_domain 仍接收 frame_id，尚未改为接收 domain 组合句柄；
-- TAB_UNRESOLVED 尚未用真实异常页面复现（错误路径已实现）；
-- 更复杂的懒加载、截断、OOPIF 页面仍待补样本；
+- TAB_UNRESOLVED 已用真实可逆异常状态复现；
+- 限速加载中的 pending → complete 已验证；更复杂的截断/OOPIF 页面仍待补样本；
 - 尚未安装到真实 DSH。

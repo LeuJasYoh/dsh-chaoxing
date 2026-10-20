@@ -77,15 +77,57 @@
 - 跨域 panView 能通过 CDP 读取；
 - 内容标签、无任务标签、全内联页、PDF 页面四类样本通过。
 
-## 5. 已知限制
+## 5. 异常与加载中验证（2026-10-20 补充）
 
-- 尚未用真实异常页面复现 TAB_UNRESOLVED（仅单元测试覆盖错误路径）；
+### TAB_UNRESOLVED 真实路径
+
+在 9223 的“氨基酸性质”内容标签页上：
+
+- 原始状态：dct1（笔记）active，dct2/dct3 不 active；
+- 通过 CDP 临时给 dct2 也加上 active，形成两个 active；
+- task_points 返回：
+
+~~~json
+{
+  "ok": false,
+  "error": {
+    "code": "TAB_UNRESOLVED",
+    "message": "multiple content tabs exist but the active tab could not be determined"
+  }
+}
+~~~
+
+- 随后恢复原始 active 状态；
+- 再次调用 task_points 成功，返回当前“笔记”标签、0 个任务点、coverage=complete。
+
+本次只临时改 class 并恢复，没有点击标签、切换标签、播放、提交或改变学习进度。
+
+### 加载中 coverage
+
+用 CDP 网络限速（约 3G）打开英语 Unit 2 Stress：
+
+- 页面刚加载时：
+  - page_snapshot：ready_state=loading，coverage=pending，frames=1，tabs=0；
+  - task_points：coverage=pending，points=0；
+- 恢复网络并等待后：
+  - page_snapshot：ready_state=complete，coverage=complete，frames=3，tabs=3；
+  - task_points：coverage=partial，points=1（当前标签 1 个未完成视频，章节还有未观察任务）。
+
+证明：
+
+- 页面没加载完时不会假装完整；
+- 加载完成后观察结果会恢复；
+- task_points 只观察当前内容标签。
+
+## 6. 已知限制
+
+- TAB_UNRESOLVED 已覆盖，但只在临时异常状态下复现，不是自然页面常态；
 - scroll_domain 仍接收 frame_id，尚未接入 domain 组合句柄；
 - 6.1 页面只有一个内容标签且标题为空，tab.title 为 null；
 - 内容标签切换仍属 P6，P5 不切换；
 - 尚未安装到真实 DSH，工具列表端到端验证放 P8。
 
-## 6. 结论
+## 7. 结论
 
 P5 的观察工具已经能在真实页面上独立回答：
 
@@ -96,4 +138,4 @@ P5 的观察工具已经能在真实页面上独立回答：
 - PDF 对应哪个 panView 和滚到哪里；
 - 哪些 frame/滚动域可以后续操作。
 
-P5.8 的剩余工作主要是异常页面与更复杂懒加载样本，不是核心链路阻塞。
+P5.8 的剩余工作主要是 scroll_domain 接入 domain 组合句柄、真实 DSH 安装验证和更多页面样本，不是核心观察链路阻塞。
