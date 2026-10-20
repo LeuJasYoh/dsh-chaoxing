@@ -61,10 +61,8 @@ export function registerTaskPointCheck(ctx, { output, toLossless, session, regis
             return toLossless({ ok: false, tool: 'task_point_check', job_id: jobId, error: { code: 'TASK_POINT_NOT_FOUND', message: 'task point is not in the current content tab', observed: { attempts, chapter: scan.chapter } } })
           }
           if (!initial) initial = latest
-          const changed = initial.state !== latest.state ||
-            JSON.stringify(initial.signals) !== JSON.stringify(latest.signals) ||
-            initial.conflict !== latest.conflict
-          if (changed && latest.state === 'completed') break
+          // Completed is already evidence; don't burn the full window.
+          if (latest.state === 'completed') break
           if (Date.now() - started >= waitMs) break
           if (waitMs === 0) break
           await sleep(250)

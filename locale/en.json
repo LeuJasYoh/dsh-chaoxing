@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Online Course Mode (Rewrite)",
-    "description": "Browser observation and course-page tools, starting with question reading and scrolling."
+    "title": "Study Mode",
+    "description": "An observation-first browser study assistant that acts and verifies."
   }
 }

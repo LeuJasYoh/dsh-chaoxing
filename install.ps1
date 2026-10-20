@@ -377,7 +377,7 @@ function Install-Plugin {
             throw "安装后没有找到 node_modules/$pluginName/package.json"
         }
         Write-Ok "安装完成：$pluginName"
-        Write-Info '请重启 DeepSeek Harness，然后在模式选择里选择「网课模式（重写）」。'
+        Write-Info '请重启 DeepSeek Harness，然后在模式选择里选择「学习模式」。'
     } catch {
         Write-Warn "安装失败：$($_.Exception.Message)"
         Write-Warn '正在恢复 profile 配置文件 ...'

@@ -20,7 +20,7 @@
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: xuexi-next
-        name: 网课模式（重写）
+        name: 学习模式
         plugins:
           - id: xuexi-next
             name: dsh-xuexi-next

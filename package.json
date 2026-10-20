@@ -1,7 +1,7 @@
 {
   "name": "dsh-xuexi-next",
-  "version": "0.2.0",
-  "description": "DSH 网课模式重写版：先把手和眼还给模型，再做可选的业务流程",
+  "version": "0.2.1",
+  "description": "DSH 学习模式：先观察页面，再操作并验证的浏览器学习助手",
   "type": "module",
   "license": "MIT",
   "main": "./index.js",
@@ -44,8 +44,8 @@
   ],
   "dsh": {
     "id": "dsh-xuexi-next",
-    "name": "网课模式（重写）",
-    "version": "0.2.0",
+    "name": "学习模式",
+    "version": "0.2.1",
     "engines": {
       "dsh": ">=0.2.0"
     },

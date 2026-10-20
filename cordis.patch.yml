@@ -17,14 +17,14 @@
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: xuexi-next
-        name: 网课模式（重写）
-        description: 重写中的网课模式：手眼优先，业务后置
+        name: 学习模式
+        description: 先观察页面，再操作并验证的浏览器学习助手
         order: 21
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
-              prefix: 你是网课助手：先观察，再决定，最后亲手操作并验证。
+              prefix: 你是学习助手：先观察，再决定，最后亲手操作并验证。
               includeRuntimeContext: false
 
           - id: xuexi-next

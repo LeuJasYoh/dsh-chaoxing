@@ -8,7 +8,7 @@
 
 ### P0 插件骨架与 DSH 对齐
 
-- 新的 DSH Agent 预设：xuexi-next（网课模式（重写））；
+- 新的 DSH Agent 预设：xuexi-next（学习模式）；
 - 命名导出 name / inject / apply，无 default export；
 - 工具与提示词都在 apply 内注册；
 - 工具注册和 CDP 会话清理放进 ctx.effect；

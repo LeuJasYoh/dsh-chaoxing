@@ -19,7 +19,7 @@ profile 已包含：
 
 ## 2. 真实 DSH 会话验证
 
-在网课模式（重写）会话中，模型工具列表包含：
+在学习模式会话中，模型工具列表包含：
 
 - page_snapshot
 - page_notes
@@ -58,7 +58,7 @@ profile 已包含：
 
 - 4 个视频出现 completed class 与 aria 未完成冲突，工具正确报告 conflict=true，没有自行裁决；
 - 首个任务点已经 completed，task_point_check 仍等待了整个 3 秒窗口；
-- 后续可优化为 initial completed 时立即返回，只有 incomplete/unknown 才等待。
+- 已在 0.2.1 优化：initial completed 时立即返回，只有 incomplete/unknown 才等待；本地模拟验证约 79ms 返回。
 
 ## 5. 结论
 

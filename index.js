@@ -17,9 +17,9 @@ const VERSION = (() => {
 
 const PROMPT_TEXT = (() => {
   try {
-    return readFileSync(new URL('./prompts/xuexi-mode.md', import.meta.url), 'utf8')
+    return readFileSync(new URL('./prompts/study-mode.md', import.meta.url), 'utf8')
   } catch (e) {
-    return `# 网课模式（重写）\n\n（提示词读取失败：${String(e?.message ?? e)}）\n`
+    return `# 学习模式\n\n（提示词读取失败：${String(e?.message ?? e)}）\n`
   }
 })()
 
