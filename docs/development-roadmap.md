@@ -1,8 +1,8 @@
 # 开发进度与下一阶段路线
 
-更新时间：2026-10-19
+更新时间：2026-10-20
 当前版本：0.1.0
-当前阶段：P0–P4 已完成，P5 观察/句柄层留到下一阶段。
+当前阶段：P0–P5.7 已实现观察/句柄核心，P5.8 真实页面联调部分完成。
 
 ## 一、当前已经完成
 
@@ -86,8 +86,8 @@
 
 ## 三、已知缺口与设计债
 
-1. 观察/句柄层未实现：Agent 目前拿不到 job_id / frame_id / scroll_domain。
-2. 标签层未实现：进入章节后识别标签、只处理当前标签、完成后切下一个。
+1. 观察/句柄层核心已实现；剩余：domain 组合句柄尚未接入 scroll_domain，TAB_UNRESOLVED 尚未用真实异常页面复现。
+2. 标签层已能观察当前内容标签；切换标签仍属 P6，不在 P5。
 3. 工具契约与当前实现有偏差：
    - scroll_domain 当前使用 frame_id；
    - scroll_to 是新工具，不在 v1 契约中；
@@ -95,11 +95,10 @@
    
    这些偏差是主动演进，不是错误；等观察层确定后统一回写契约，不为了旧契约限制新结构。
 
-4. 只有 frame document 滚动域，元素滚动域尚未扩展。
+4. 元素滚动域已加入 page_snapshot；更多 element 类型和截断策略仍需更多页面样本。
 5. foreground 模式未实现。
 6. 慢翻 readDocument 未暴露成 Agent 工具。
 7. 真实 DSH 安装、预设激活、模型工具列表验证未做。
-8. 未完成 PDF 的完成状态翻转未验证。
 9. 字体对照表 table.json 的来源/再分发许可未定。
 
 ## 四、未来开发
@@ -108,6 +107,12 @@
 
 - P5.1 观察契约与句柄模型：已定稿，见 docs/design/p5-observation-contract.md
 - P5.2 页面结构调研：全模块内联页 + 三个内容标签页样本已完成，见 docs/research/p5-2-page-structure.md
+- P5.3 任务点清单：已实现，只观察当前内容标签；全内联页和内容标签页均可返回。
+- P5.4 滚动域清单：已实现 document + 真实 element 滚动域（例如 #coursetree）。
+- P5.5 PDF/文档映射：已实现 PDF 任务点 → module frame → panView frame → document domain。
+- P5.6 就绪/截断：已实现基础 coverage / limits / truncated；懒加载和异常页仍待补样本。
+- P5.7 观察工具封装：已注册 page_snapshot / task_points，共用观察注册表和句柄失效模型。
+- P5.8 联调：已在 9222/9223 真实页面验证全内联页、内容标签有任务、内容标签无任务、PDF 页面；见 docs/research/p5-8-observation-live.md。TAB_UNRESOLVED 和更多懒加载页面仍待补。
 
 目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。
 
@@ -184,7 +189,6 @@ npm run test:live:tools
 
 ## 七、2026-10-20 代码检查修复记录
 
-本轮只做代码检查和修复，没有开始 P5。
 
 已修复：
 

@@ -1,6 +1,6 @@
 # P5.1 观察契约与句柄模型
 
-状态：P5.1 契约草案（不写功能）
+状态：P5.1 契约已定稿；P5.3+ 已按此契约实现
 日期：2026-10-20
 相关：[P5 路线](../development-roadmap.md)、[工具契约 v1](tool-contract.md)
 
@@ -380,3 +380,20 @@ P5.2 需要真实页面结构信息：
 - 当前页面类型识别。
 
 这些属于 P5.2 调研，不在 P5.1 继续展开。
+
+## 14. 实现状态（2026-10-20）
+
+已实现：
+
+- ObservationRegistry：generation / frame_epoch / 局部 element_id / domain_id；
+- page_snapshot：page、content tabs、frame 树、document + element 滚动域、hidden_frame_count、coverage / truncated；
+- task_points：当前内容标签任务点、完成状态、module frame、wrapper 句柄、PDF document 映射、content_tabs 摘要；
+- 两个工具共用同一个 CDP session 和观察注册表；
+- 已在真实页面验证：全内联页、内容标签有任务、内容标签无任务、PDF 页面、任务点先调用再 page_snapshot。
+
+尚未完成：
+
+- scroll_domain 仍接收 frame_id，尚未改为接收 domain 组合句柄；
+- TAB_UNRESOLVED 尚未用真实异常页面复现（错误路径已实现）；
+- 更复杂的懒加载、截断、OOPIF 页面仍待补样本；
+- 尚未安装到真实 DSH。

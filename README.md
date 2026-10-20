@@ -32,16 +32,17 @@
 - [学习通题目页与字体加密观察](docs/research/quiz-encryption-observations.md)
 - [PDF 慢翻完成验证](docs/research/pdf-scroll-completion.md)（含两次真实未完成 PDF 验证）
 - [P5.2 页面结构调研](docs/research/p5-2-page-structure.md)
+- [P5.8 观察工具真实页面联调](docs/research/p5-8-observation-live.md)
 - [超星章节 DOM 与滚动观察](docs/research/chaoxing-chapter-dom.md)
 - [DSH 集成说明](docs/dsh-integration.md)
 
 ## 当前阶段
 
-P0–P4 已完成。P5 观察/句柄层留到下一阶段；详见 [开发进度与下一阶段路线](docs/development-roadmap.md)。
+P0–P5.7 已实现观察/句柄核心。page_snapshot / task_points 已注册；P5.8 真实页面联调进行中；详见 [开发进度与下一阶段路线](docs/development-roadmap.md)。
 
 ## 尚未完成
 
-- `page_snapshot` / `page_outline` / `element_click` / `page_navigate` / `media_*`；
+- `page_snapshot` / `task_points` 已实现；`page_outline` / `element_click` / `page_navigate` / `media_*` 仍在后续阶段；
 - 慢翻文档的 Agent 工具封装（目前只有内部部件）；
 - 截图保底工具（图片题/无法解密时）；
 - 提交、答案复核等业务流程（后续决定）。
