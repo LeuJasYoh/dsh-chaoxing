@@ -148,13 +148,15 @@ npm run test:static
 - 加载完成后观察结果会恢复；
 - task_points 只观察当前内容标签。
 
-## 7. 已知限制
+## 7. 当时的限制与后续进展
+
+以下是 P5.8 测试当时的边界，不代表当前实现状态（2026-10-25 补充后续进展）：
 
 - TAB_UNRESOLVED 已覆盖，但只在临时异常状态下复现，不是自然页面常态；
-- scroll_domain 仍接收 frame_id，尚未接入 domain 组合句柄；
+- scroll_domain 当时仅接收 frame_id，后续已接入 domain 组合句柄，见 [观察契约](../design/p5-observation-contract.md)；
 - 6.1 页面只有一个内容标签且标题为空，tab.title 为 null；
 - 内容标签切换仍属 P6，P5 不切换；
-- 尚未安装到真实 DSH，工具列表端到端验证放 P8。
+- 当时尚未安装到真实 DSH；2026-10-20 后续已验证安装、预设加载、观察/笔记工具调用和任务点复核，见 [P8 验证记录](p8-dsh-install-validation.md)。
 
 ## 8. 结论
 
@@ -167,4 +169,4 @@ P5 的观察工具已经能在真实页面上独立回答：
 - PDF 对应哪个 panView 和滚到哪里；
 - 哪些 frame/滚动域可以后续操作。
 
-P5.8 的剩余工作主要是 scroll_domain 接入 domain 组合句柄、真实 DSH 安装验证和更多页面样本，不是核心观察链路阻塞。
+P5.8 当时列出的 domain 组合句柄接入和真实 DSH 安装链路验证后续已完成；更多页面样本与完整操作流程仍待补充，当前待办见 [README TODO](../../README.md#todo)。

@@ -1,7 +1,7 @@
 # 页面笔记与任务点复核
 
-日期：2026-10-20
-状态：第一版实现完成
+更新日期：2026-10-25
+状态：第一版已实现；不完整观察的笔记保护已补齐并通过本地回归测试
 
 ## 1. 目标
 
@@ -50,8 +50,10 @@ join(workspaceRoot, '.notes', noteId + '.json')
 - scope：课程、章节；
 - page：标题、generation、观察时间、stale；
 - tabs：标签索引、标题、active、observed、任务点；
-- task_points：job_id、kind、title、state、signals、conflict、frame_id、观察代次；
+- task_points：job_id、kind、title、state、signals、conflict、frame_id、观察代次、观察时间、stale；
 - 模型字段：plan、tab note、task annotation/intent/needs_recheck。
+
+任务级 `stale=true` 表示本次没有重新观察到该任务，当前展示的是保留的旧记录，不是新的完成证据。它与页面级 `page.stale` 分开；`needs_recheck` 仍是模型设置的待复核标记，不会被自动清除。
 
 未观察标签：
 
@@ -76,6 +78,27 @@ join(workspaceRoot, '.notes', noteId + '.json')
 - task_point_check 复核后自动 capture 最新事实；
 - 模型不能直接写任务完成状态；
 - 只有观察到完成信号，任务 state 才可能为 completed。
+
+### 不完整任务观察的合并规则
+
+只有同时满足以下条件，当前任务清单才可以整体替换旧清单：
+
+- `coverage === 'complete'`；
+- `truncated !== true`；
+- `page.ready_state === 'complete'`。
+
+否则按任务 job_id 合并：
+
+- 本次看见的任务更新状态、证据信号、frame 与观察时间，`stale=false`；
+- 本次没看见的旧任务继续保留，`stale=true`，保留原来的状态、观察代次与观察时间，不冒充新观察；
+- 原任务顺序保留，新出现的任务追加；重复观察不重复添加同一个 job_id；
+- 已有任务的 annotation、intent、needs_recheck 保留，标签备注和页面计划不变；
+- 首次通过任务观察创建标签记录但尚未读到任务时，保存 `observed=false`、`task_points=null`，而不是“确认没有任务”；
+- 完整观察允许删除没有返回的任务；完整空观察才会将任务清单清为 `[]`。
+
+例如：笔记里原有视频 A 的备注，页面加载中返回空任务列表，视频 A 与备注仍保留但标记为旧记录。下次重新读到视频 A 后更新事实并清除任务级 stale，备注不会丢失。只刷新页面结构快照不会清除任务级 stale；必须重新观察到该任务。
+
+这些规则保护已有笔记，不能恢复修复前已经被清掉的备注，也不改变 CDP 导航代次或句柄校验机制。
 
 ## 5. page_notes 工具
 
@@ -116,3 +139,13 @@ join(workspaceRoot, '.notes', noteId + '.json')
 - 默认 3 秒复核未完成视频任务点，返回 incomplete，等待约 3.2 秒；
 - 笔记写入工作区 .notes，文件名不含插件名；
 - 敏感 enc 参数未进入笔记。
+
+2026-10-25 笔记保护的本地回归已通过：
+
+- pending/partial 的空结果、被截断的结果、页面加载中的结果不删除旧任务；
+- 部分观察更新已看见的任务、保留遗漏任务、追加新任务，重复观察不重复添加；
+- 重新观察后状态与任务级 stale 正常更新，人工备注、intent、needs_recheck 保留；
+- 完整观察仍可移除已不存在的任务，完整空观察仍可清空清单；
+- 首次不完整空观察保留未知状态，其他标签记录不受任务合并影响；
+- 自动 capture 到临时目录后重新读取，旧记录标记和备注保持一致；
+- npm test 七组全部通过；本次修复尚未重新安装到真实 DSH 验证。

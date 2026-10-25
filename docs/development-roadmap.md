@@ -1,8 +1,10 @@
 # 开发进度与下一阶段路线
 
-更新时间：2026-10-20
-当前版本：0.1.0
-当前阶段：P0–P5.7 已实现观察/句柄核心，P5.8 真实页面联调已完成（DSH 安装验证待后续）。
+更新时间：2026-10-25
+当前包版本：0.2.1
+当前阶段：P0–P5 核心功能、笔记与任务点复核已实现；P8 的真实 DSH 安装和观察/笔记链路已有验证记录，完整操作流程仍待后续。当前源码已补齐不完整观察的笔记保护，本次修复仅完成本地验证。
+
+后续 TODO 与暂不处理事项统一见 [README](../README.md#todo)；列入 TODO 不代表已经批准实施。
 
 ## 一、当前已经完成
 
@@ -64,25 +66,27 @@
 
 ## 二、验证结论
 
-已经执行：
+本地验证：
 
-- 25 个 JS/MJS 文件 node --check；
-- package.json、locale JSON 解析；
-- cordis.patch.yml 使用 DSH 自带 js-yaml 解析，结构与模板一致；
-- npm pack --dry-run，打包内容包含 tools/lib/prompts/cordis.patch.yml/locale/icon；
-- npm test 四组全部通过；
-- 真实页面工具组装测试：
-  - 7 个任务点全部能被 scroll_to 滚入视口；
-  - 7 个 PDF 全部能找到独立 panView；
-  - 7 个 scroll_domain 全部 at_bottom=true，底部间隙 ≤ 0.4px；
-  - 错误参数返回对应错误码。
+- 早期已完成 25 个 JS/MJS 文件的 node --check、package.json/locale JSON 解析及 DSH 自带 js-yaml 的补丁结构检查；
+- npm pack --dry-run 通过，打包内容包含 tools/lib/prompts/cordis.patch.yml/locale/icon；
+- 2026-10-25 的 npm test 七组全部通过：smoke / cxsecret / tasks / scroll / questions / observe / notes；
+- 本次修改的笔记实现与测试通过 node --check、git diff --check；回归测试覆盖空 pending/partial、截断、加载中、部分更新、恢复、完整清空及临时文件保存。
+
+既有真实页面与 DSH 验证：
+
+- 7 个任务点全部能被 scroll_to 滚入视口；
+- 7 个 PDF 全部能找到独立 panView，scroll_domain 返回 at_bottom=true，底部间隙 ≤ 0.4px；
+- 错误参数返回对应错误码；
+- 2026-10-20 已在真实 DSH 中完成安装、预设加载、观察/笔记工具调用和任务点复核，见 [P8 验证记录](research/p8-dsh-install-validation.md)。
 
 验证边界：
 
-- 还没有在真实 DSH 中安装并激活 Bundle；
-- 未完成 PDF 的慢翻完成状态翻转已在两个章节验证（见 docs/research/pdf-scroll-completion.md）；scroll_to 实际工具也已在真实页面验证；单步直接跳到底仍待验证；
-- 还没有在真正延迟加载的页面验证 waitFor 重试；
-- 字体表 provenance/许可证仍未最终确认。
+- 历史安装验证已完成，不代表当前机器的 profile 一定仍启用插件；本次笔记保护尚未重新安装到真实 DSH 验证；
+- 未完成 PDF 的慢翻完成状态翻转已在两个章节验证（见 [PDF 记录](research/pdf-scroll-completion.md)）；单步直接跳到底能否触发完成仍待验证；
+- 网络限速下已验证观察结果的 pending/complete 变化，但操作工具的 waitFor 在真实延迟加载页面上的重试仍需验证；
+- 完整的标签切换、点击、媒体操作流程尚未实现，也未做端到端验收；
+- 字体表来源/再分发许可仍未最终确认。
 
 ## 三、已知缺口与设计债
 
@@ -95,15 +99,16 @@
    
    这些偏差是主动演进，不是错误；等观察层确定后统一回写契约，不为了旧契约限制新结构。
 
-4. 元素滚动域已加入 page_snapshot；更多 element 类型和截断策略仍需更多页面样本。
+4. 元素滚动域已加入 page_snapshot；截断标记和 evaluable 的准确性仍需补齐，更多 element/OOPIF 类型需要页面样本。
 5. foreground 模式未实现。
 6. 慢翻 readDocument 未暴露成 Agent 工具。
-7. 真实 DSH 安装、预设激活、模型工具列表验证未做。
+7. 真实 DSH 安装及观察/笔记链路已验证；本次笔记保护复测、完整操作流程的端到端验证仍待后续。
+8. 题目分页、计划参数声明与页面级 stale 等收尾项待确认；目标多开、句柄加固、安装路径回退及测试副作用本轮不处理，详见 README。
 9. 字体对照表 table.json 的来源/再分发许可未定。
 
-## 四、未来开发
+## 四、阶段进度与后续开发
 
-### P5 观察/句柄层（核心已完成，待 DSH 安装验证）
+### P5 观察/句柄层（核心与笔记已实现，真实 DSH 链路已验证）
 
 - P5.1 观察契约与句柄模型：已定稿，见 docs/design/p5-observation-contract.md
 - P5.2 页面结构调研：全模块内联页 + 三个内容标签页样本已完成，见 docs/research/p5-2-page-structure.md
@@ -115,9 +120,10 @@
 - P5.8 联调：已验证全内联页、内容标签有任务、内容标签无任务、PDF 页面、真实 TAB_UNRESOLVED 异常路径、限速加载中 pending/complete、静态 fixture；见 docs/research/p5-8-observation-live.md。
 - P5.9 工作区页面笔记：.notes 存储、revision、stale、未观察标签占位；见 docs/design/page-notes.md。
 - P5.10 page_notes：get/list/capture/patch，自动 capture 观察事实。
-- P5.11 task_point_check：复用任务点部件，默认最多等 3 秒，不刷新页面。
+- P5.11 task_point_check：复用任务点部件，默认最多等 3 秒，不刷新页面；0.2.1 已优化为初次观察完成即返回。
 - P5.12 笔记/复核联调：已在重新安装后的真实 DSH 0.2.0 会话中验证；.notes 文件、plan patch、任务点复核均通过。
-- scroll_domain 已支持 page_snapshot 返回的 domain 组合句柄，同时保留 frame_id 兼容。
+- 2026-10-25 笔记保护：不完整观察按 job_id 合并，保留未重新观察的任务与人工备注并标记任务级 stale；完整观察才可删除旧任务。本地回归通过，真实 DSH 复测待后续。
+- scroll_domain 已支持 page_snapshot 返回的 domain 组合句柄，同时保留 frame_id 兼容；句柄进一步加固暂缓。
 
 目标：让 Agent 自己拿到操作句柄，而不是测试脚本直接传参。
 
@@ -152,18 +158,13 @@
 - 元素滚动域扩展；
 - 视需要再讨论 foreground。
 
-### P8 端到端与真实 DSH 验证
+### P8 端到端与真实 DSH 验证（部分完成）
 
-- 安装 Bundle 到 DSH profile；
-- 验证预设激活、显示元数据、工具列表；
-- 真实 Agent 会话跑通：
-  - 识别标签；
-  - 观察任务点；
-  - 滚动到任务点；
-  - 翻阅 PDF；
-  - 重新观察任务点状态；
-- 用未完成 PDF 验证完成状态翻转；
-- 真实延迟加载页面验证 waitFor。
+- [x] 安装 Bundle、预设加载、观察/笔记工具调用及任务点复核；见 [真实 DSH 记录](research/p8-dsh-install-validation.md)。
+- [x] 用未完成 PDF 验证慢翻后的完成状态翻转；见 [PDF 记录](research/pdf-scroll-completion.md)。
+- [ ] 在重新安装后的真实 DSH 会话中验证本次笔记保护；运行前确认插件在该 profile 中启用。
+- [ ] 在后续操作工具具备后，验证完整工具列表、显示元数据及真实 Agent 会话的“识别标签 → 观察任务点 → 滚动/翻阅 → 复核”流程。
+- [ ] 在真实延迟加载页面验证操作工具的 waitFor 重试。
 
 ### P9 契约、许可证与发布
 
@@ -175,9 +176,10 @@
 
 ## 五、下一会话从这里开始
 
-1. 先读本文件；
-2. P5 观察/句柄层核心已完成；下一步先做真实 DSH 安装/工具列表验证，再决定是否进入 P6 标签切换；
-3. 保持只读验证习惯：没有明确授权，不点击答案、不提交、不改变学习进度。
+1. 先读本文件及 README 的 TODO/暂不处理事项；
+2. P5 与真实 DSH 安装链路已有实现和验证记录，不再按脚手架阶段重新规划；后续先确认要做笔记修复的真实 DSH 复测，还是进入 P6 标签切换；
+3. 本次仅修复不完整任务观察覆盖笔记；其他收尾项待确认，明确暂缓的事项不要自动纳入修复；
+4. 默认先跑本地测试；真实页面联调需确认本次操作范围，不把既有测试记录当作当前页面已验证。
 
 ## 六、测试命令
 
